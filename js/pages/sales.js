@@ -133,6 +133,19 @@ function renderSalesTable(data) {
   const container = document.getElementById('sales-table-container');
   if (!container) return;
 
+  // Pagination
+  const PAGE_SIZE = 50;
+  window._filteredSales = data;
+  window._salesPage = window._salesPage || 1;
+  if (data !== window._lastFilteredSales) {
+    window._salesPage = 1;
+    window._lastFilteredSales = data;
+  }
+  const totalPages = Math.max(1, Math.ceil(data.length / PAGE_SIZE));
+  if (window._salesPage > totalPages) window._salesPage = totalPages;
+  const start = (window._salesPage - 1) * PAGE_SIZE;
+  const pageData = data.slice(start, start + PAGE_SIZE);
+
   const columns = [
     { label: 'N° Vente', render: r => `<code class="code-tag">#${String(r.id).padStart(6, '0')}</code>` },
     { label: 'Date & Heure', render: r => UI.formatDateTime(new Date(r.date).getTime()) },
@@ -177,7 +190,19 @@ function renderSalesTable(data) {
     },
   ];
 
-  UI.table(container, columns, data, { emptyMessage: 'Aucune vente pour cette période', emptyIcon: 'shopping-cart' });
+  UI.table(container, columns, pageData, { emptyMessage: 'Aucune vente pour cette période', emptyIcon: 'shopping-cart' });
+
+  // Pagination controls
+  const pagDiv = document.createElement('div');
+  pagDiv.style.cssText = 'display:flex;justify-content:space-between;align-items:center;padding:16px 0;gap:12px;flex-wrap:wrap;';
+  pagDiv.innerHTML = `
+    <span style="font-size:13px;color:var(--text-muted)">${data.length.toLocaleString()} ventes — Page ${window._salesPage}/${totalPages}</span>
+    <div style="display:flex;gap:8px;">
+      <button class="btn btn-secondary btn-sm" ${window._salesPage <= 1 ? 'disabled' : ''} onclick="window._salesPage--;renderSalesTable(window._filteredSales)">◀ Précédent</button>
+      <button class="btn btn-secondary btn-sm" ${window._salesPage >= totalPages ? 'disabled' : ''} onclick="window._salesPage++;renderSalesTable(window._filteredSales)">Suivant ▶</button>
+    </div>
+  `;
+  container.appendChild(pagDiv);
   if (window.lucide) lucide.createIcons();
 }
 

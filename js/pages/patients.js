@@ -53,6 +53,19 @@ function filterPatients() {
   const container = document.getElementById('patients-table-container');
   if (!container) return;
 
+  // Pagination
+  const PAGE_SIZE = 50;
+  window._filteredPatients = data;
+  window._patientsPage = window._patientsPage || 1;
+  if (data !== window._lastFilteredPatients) {
+    window._patientsPage = 1;
+    window._lastFilteredPatients = data;
+  }
+  const totalPages = Math.max(1, Math.ceil(data.length / PAGE_SIZE));
+  if (window._patientsPage > totalPages) window._patientsPage = totalPages;
+  const start = (window._patientsPage - 1) * PAGE_SIZE;
+  const pageData = data.slice(start, start + PAGE_SIZE);
+
   const rxMap = {};
   (window._patientsPrescriptions || []).forEach(rx => {
     if (!rxMap[rx.patientId]) rxMap[rx.patientId] = 0;
@@ -76,7 +89,19 @@ function filterPatients() {
         <button class="btn btn-xs btn-primary" onclick="viewPatient(${r.id})"><i data-lucide="folder"></i> Dossier</button>
         <button class="btn btn-xs btn-secondary" onclick="editPatient(${r.id})"><i data-lucide="edit-3"></i></button>
       </div>` },
-  ], data, { emptyMessage: 'Aucun patient trouvé', emptyIcon: 'user' });
+  ], pageData, { emptyMessage: 'Aucun patient trouvé', emptyIcon: 'user' });
+
+  // Pagination controls
+  const pagDiv = document.createElement('div');
+  pagDiv.style.cssText = 'display:flex;justify-content:space-between;align-items:center;padding:16px 0;gap:12px;flex-wrap:wrap;';
+  pagDiv.innerHTML = `
+    <span style="font-size:13px;color:var(--text-muted)">${data.length.toLocaleString()} patients — Page ${window._patientsPage}/${totalPages}</span>
+    <div style="display:flex;gap:8px;">
+      <button class="btn btn-secondary btn-sm" ${window._patientsPage <= 1 ? 'disabled' : ''} onclick="window._patientsPage--;filterPatients()">◀ Précédent</button>
+      <button class="btn btn-secondary btn-sm" ${window._patientsPage >= totalPages ? 'disabled' : ''} onclick="window._patientsPage++;filterPatients()">Suivant ▶</button>
+    </div>
+  `;
+  container.appendChild(pagDiv);
   if (window.lucide) lucide.createIcons();
 }
 

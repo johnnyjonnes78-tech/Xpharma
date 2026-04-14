@@ -107,6 +107,19 @@ function renderStockTable(data) {
   const container = document.getElementById('stock-table-container');
   if (!container) return;
 
+  // Pagination
+  const PAGE_SIZE = 50;
+  window._filteredStock = data;
+  window._stockPage = window._stockPage || 1;
+  if (data !== window._lastFilteredStock) {
+    window._stockPage = 1;
+    window._lastFilteredStock = data;
+  }
+  const totalPages = Math.max(1, Math.ceil(data.length / PAGE_SIZE));
+  if (window._stockPage > totalPages) window._stockPage = totalPages;
+  const start = (window._stockPage - 1) * PAGE_SIZE;
+  const pageData = data.slice(start, start + PAGE_SIZE);
+
   const columns = [
     { label: 'Code', key: 'code', render: r => `<code class="code-tag">${r.code}</code>` },
     {
@@ -137,10 +150,22 @@ function renderStockTable(data) {
       </div>` },
   ];
 
-  UI.table(container, columns, data, {
+  UI.table(container, columns, pageData, {
     emptyMessage: 'Aucun produit trouvé',
     emptyIcon: 'package',
   });
+
+  // Pagination controls
+  const pagDiv = document.createElement('div');
+  pagDiv.style.cssText = 'display:flex;justify-content:space-between;align-items:center;padding:16px 0;gap:12px;flex-wrap:wrap;';
+  pagDiv.innerHTML = `
+    <span style="font-size:13px;color:var(--text-muted)">${data.length.toLocaleString()} produits — Page ${window._stockPage}/${totalPages}</span>
+    <div style="display:flex;gap:8px;">
+      <button class="btn btn-secondary btn-sm" ${window._stockPage <= 1 ? 'disabled' : ''} onclick="window._stockPage--;renderStockTable(window._filteredStock)">◀ Précédent</button>
+      <button class="btn btn-secondary btn-sm" ${window._stockPage >= totalPages ? 'disabled' : ''} onclick="window._stockPage++;renderStockTable(window._filteredStock)">Suivant ▶</button>
+    </div>
+  `;
+  container.appendChild(pagDiv);
   if (window.lucide) lucide.createIcons();
 }
 
