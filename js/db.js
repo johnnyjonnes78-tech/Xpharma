@@ -802,17 +802,24 @@ async function pullFromSupabase() {
       try {
         let allData = [];
         let fromIdx = 0;
-        const fetchLimit = 1000;
+        const fetchLimit = 3000; // Augmenté pour accélérer le téléchargement
+        
         while (true) {
-          const { data, error } = await sb.from(storeName === 'users' ? 'app_users' : storeName)
-                                          .select('*')
-                                          .range(fromIdx, fromIdx + fetchLimit - 1);
-          if (error) throw error;
-          if (data && data.length > 0) {
-            allData = allData.concat(data);
+          try {
+            const { data, error } = await sb.from(storeName === 'users' ? 'app_users' : storeName)
+                                            .select('*')
+                                            .range(fromIdx, fromIdx + fetchLimit - 1);
+            if (error) throw error;
+            if (data && data.length > 0) {
+              allData = allData.concat(data);
+            }
+            if (!data || data.length < fetchLimit) break;
+            fromIdx += fetchLimit;
+          } catch(errReq) {
+            // Si erreur de range/timeout, on réduit la limite temporairement
+            if (fromIdx === 0) throw errReq;
+            break;
           }
-          if (!data || data.length < fetchLimit) break;
-          fromIdx += fetchLimit;
         }
 
         if (allData.length > 0) {
@@ -837,8 +844,8 @@ async function pullFromSupabase() {
             return localItem;
           }).filter(item => !(storeName === 'settings' && item.status === 'DELETED'));
 
-          // ── BATCH WRITE : 500 items par transaction IndexedDB ──
-          const BATCH_SIZE = 500;
+          // ── BATCH WRITE OPTIMISÉ : 2000 items par transaction IndexedDB ──
+          const BATCH_SIZE = 2000;
           for (let i = 0; i < preparedItems.length; i += BATCH_SIZE) {
             const batch = preparedItems.slice(i, i + BATCH_SIZE);
             await new Promise((resolve, reject) => {
@@ -851,9 +858,9 @@ async function pullFromSupabase() {
               tx.onerror = () => reject(tx.error);
               tx.onabort = () => reject(tx.error);
             });
-            // Pause de 10ms entre les batches pour laisser respirer le navigateur
+            // Pause très courte pour la libération du thread UI
             if (i + BATCH_SIZE < preparedItems.length) {
-              await new Promise(r => setTimeout(r, 10));
+              await new Promise(r => setTimeout(r, 5));
             }
           }
           console.log(`[Flash] ✅ ${storeName}: ${preparedItems.length} importés`);

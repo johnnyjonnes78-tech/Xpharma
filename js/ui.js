@@ -130,16 +130,31 @@ const UI = {
       this.empty(container, options.emptyMessage || 'Aucun résultat', options.emptyIcon);
       return;
     }
+
+    // Auto-pagination pour prévenir les crashs
+    const pageSize = options.pageSize || 50;
+    const isPaginated = options.paginate !== false && rows.length > pageSize;
+    let currentPage = parseInt(container.dataset.page || '1');
+    
+    const totalPages = Math.ceil(rows.length / pageSize);
+    if (currentPage > totalPages) currentPage = totalPages;
+    if (currentPage < 1) currentPage = 1;
+
+    let displayRows = rows;
+    if (isPaginated) {
+      const start = (currentPage - 1) * pageSize;
+      displayRows = rows.slice(start, start + pageSize);
+    }
+
     const thead = columns.map(c => `<th>${c.label}</th>`).join('');
-    const tbody = rows.map((row, ri) => {
+    const tbody = displayRows.map((row, ri) => {
+      const globalIdx = isPaginated ? ((currentPage - 1) * pageSize + ri) : ri;
       const cells = columns.map(c => {
-        const val = typeof c.render === 'function' ? c.render(row, ri) : (row[c.key] ?? '—');
-        // data-label pour le card-view mobile (CSS ::before { content: attr(data-label) })
-        // Si pas de label (ex: colonne d'actions), data-label="" masque le pseudo-élément
+        const val = typeof c.render === 'function' ? c.render(row, globalIdx) : (row[c.key] ?? '—');
         const label = c.label || '';
         return `<td data-label="${label}">${val}</td>`;
       }).join('');
-      return `<tr ${options.onRowClick ? `class="clickable" data-idx="${ri}"` : ''}>${cells}</tr>`;
+      return `<tr ${options.onRowClick ? `class="clickable" data-idx="${globalIdx}"` : ''}>${cells}</tr>`;
     }).join('');
 
     const wrapper = document.createElement('div');
@@ -149,15 +164,34 @@ const UI = {
         <thead><tr>${thead}</tr></thead>
         <tbody>${tbody}</tbody>
       </table>`;
+    
     container.innerHTML = '';
     container.appendChild(wrapper);
+
+    if (isPaginated) {
+      const pagDiv = document.createElement('div');
+      pagDiv.style.cssText = 'display:flex;justify-content:space-between;align-items:center;padding:16px 0;gap:12px;flex-wrap:wrap;';
+      pagDiv.innerHTML = `
+        <span style="font-size:13px;color:var(--text-muted)">${rows.length.toLocaleString()} données — Page ${currentPage}/${totalPages}</span>
+        <div style="display:flex;gap:8px;">
+          <button class="btn btn-secondary btn-sm" id="ui-btn-prev" ${currentPage <= 1 ? 'disabled' : ''}>◀ Précédent</button>
+          <button class="btn btn-secondary btn-sm" id="ui-btn-next" ${currentPage >= totalPages ? 'disabled' : ''}>Suivant ▶</button>
+        </div>
+      `;
+      container.appendChild(pagDiv);
+      
+      const prevBtn = container.querySelector('#ui-btn-prev');
+      const nextBtn = container.querySelector('#ui-btn-next');
+      if (prevBtn) prevBtn.onclick = () => { container.dataset.page = currentPage - 1; UI.table(container, columns, rows, options); };
+      if (nextBtn) nextBtn.onclick = () => { container.dataset.page = currentPage + 1; UI.table(container, columns, rows, options); };
+    }
 
     if (options.onRowClick) {
       wrapper.querySelectorAll('tr[data-idx]').forEach(tr => {
         tr.onclick = () => options.onRowClick(rows[parseInt(tr.dataset.idx)]);
       });
     }
-    if (window.lucide) lucide.createIcons();
+    if (window.lucide) lucide.createIcons({ root: container });
   },
 
   paymentMethodBadge(method) {

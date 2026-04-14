@@ -330,29 +330,29 @@ function renderReorderTable() {
         <tbody>
           ${pageData.map((s, i) => {
             const originalIdx = start + i;
-            return \`
+            return `
             <tr>
-              <td><input type="checkbox" class="suggestion-cb" data-idx="\${originalIdx}" \${s.selected ? 'checked' : ''} onchange="updateReorderState(\${originalIdx}, 'selected', this.checked)"></td>
+              <td><input type="checkbox" class="suggestion-cb" data-idx="${originalIdx}" ${s.selected ? 'checked' : ''} onchange="updateReorderState(${originalIdx}, 'selected', this.checked)"></td>
               <td>
-                <div><strong>\${s.product.name}</strong></div>
-                <div class="text-muted text-sm">\${s.product.category}</div>
+                <div><strong>${s.product.name}</strong></div>
+                <div class="text-muted text-sm">${s.product.category}</div>
               </td>
               <td>
-                <span class="\${s.currentStock === 0 ? 'text-danger' : s.currentStock <= s.product.minStock ? 'text-warning' : 'text-success'} font-bold">\${s.currentStock}</span>
-                <span class="text-muted text-sm"> / min \${s.product.minStock}</span>
+                <span class="${s.currentStock === 0 ? 'text-danger' : s.currentStock <= s.product.minStock ? 'text-warning' : 'text-success'} font-bold">${s.currentStock}</span>
+                <span class="text-muted text-sm"> / min ${s.product.minStock}</span>
               </td>
-              <td>\${s.avgDailyConsumption}</td>
+              <td>${s.avgDailyConsumption}</td>
               <td>
-                <span class="badge badge-\${s.urgency === 'critical' ? 'danger' : s.urgency === 'high' ? 'warning' : 'info'}">
-                  \${s.daysRemaining >= 999 ? '∞' : s.daysRemaining + 'j'}
+                <span class="badge badge-${s.urgency === 'critical' ? 'danger' : s.urgency === 'high' ? 'warning' : 'info'}">
+                  ${s.daysRemaining >= 999 ? '∞' : s.daysRemaining + 'j'}
                 </span>
               </td>
-              <td><input type="number" class="input-sm" id="suggest-qty-\${originalIdx}" value="\${s.suggestedQtyToOrder}" min="1" style="width:70px" onchange="updateReorderState(\${originalIdx}, 'qty', this.value)"></td>
-              <td><span class="badge badge-\${s.urgency === 'critical' ? 'danger' : s.urgency === 'high' ? 'warning' : 'info'}">\${s.urgency === 'critical' ? 'Critique' : s.urgency === 'high' ? 'Haute' : 'Normale'}</span></td>
+              <td><input type="number" class="input-sm" id="suggest-qty-${originalIdx}" value="${s.suggestedQtyToOrder}" min="1" style="width:70px" onchange="updateReorderState(${originalIdx}, 'qty', this.value)"></td>
+              <td><span class="badge badge-${s.urgency === 'critical' ? 'danger' : s.urgency === 'high' ? 'warning' : 'info'}">${s.urgency === 'critical' ? 'Critique' : s.urgency === 'high' ? 'Haute' : 'Normale'}</span></td>
               <td>
-                <button class="btn btn-xs btn-primary" onclick="quickOrder(\${s.product.id}, '\${s.product.name.replace(/'/g, "\\\\'")}')">Commander</button>
+                <button class="btn btn-xs btn-primary" onclick="quickOrder(${s.product.id}, '${s.product.name.replace(/'/g, "\\'")}')">Commander</button>
               </td>
-            </tr>\`;
+            </tr>`;
           }).join('')}
         </tbody>
       </table>
