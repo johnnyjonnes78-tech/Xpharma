@@ -796,7 +796,8 @@ async function pullFromSupabase() {
       return; 
     }
 
-    await Promise.all(storesToPull.map(async (storeName) => {
+    // Traitement séquentiel pour les grosses tables (products) afin d'éviter de surcharger la mémoire
+    for (const storeName of storesToPull) {
       try {
         let allData = [];
         let fromIdx = 0;
@@ -813,90 +814,55 @@ async function pullFromSupabase() {
           fromIdx += fetchLimit;
         }
 
-        let data = allData;
-
-        if (data && data.length > 0) {
+        if (allData.length > 0) {
           hasChanges = true;
-          for (const item of data) {
-            try {
-              let localItem = { ...item, _synced: true, _updatedAt: item.updatedAt || Date.now() };
-              
-              // ── Préserver les colonnes local-only lors du merge ──
-              // Supabase n'a pas ces colonnes : on les récupère de la version locale existante
-              try {
-                const primaryKey = storeName === 'settings' ? localItem.key : localItem.id;
-                const existingLocal = await dbGet(storeName, primaryKey);
-                if (existingLocal) {
-                  const _localOnlyCols = {
-                    sales: ['assuranceName', 'assuranceRef', 'assuranceAmount', 'paymentDetails', 'paidAt', 'paidDate', 'paidMethod', 'returnStatus', 'lastReturnId', 'lastReturnDate', 'patientName', 'patientPhone'],
-                    cashRegister: ['reference', 'saleId'],
-                    prescriptions: ['notes', 'patientName', 'dispensedAt', 'dispensedBy', 'saleId'],
-                  };
-                  const colsToPreserve = _localOnlyCols[storeName] || [];
-                  for (const col of colsToPreserve) {
-                    if (existingLocal[col] !== undefined && localItem[col] === undefined) {
-                      localItem[col] = existingLocal[col];
-                    }
-                  }
-                }
-              } catch (_) { /* ignore merge errors */ }
-              
-              if (storeName === 'settings' && localItem.status === 'DELETED') {
-                await _dbDeleteRaw(storeName, localItem.key || localItem.id);
-                continue;
-              }
+          console.log(`[Flash] 📦 ${storeName}: ${allData.length} éléments à importer...`);
 
-              const mustBeString = [
-                'username', 'password', 'code', 'lotNumber', 'phone', 'dnpm',
-                'pharmacy_phone', 'pharmacy_dnpm', 'pharmacy_name', 'key', 'value'
-              ];
-              for (const key of Object.keys(localItem)) {
-                if (mustBeString.includes(key) || (storeName === 'settings' && key === 'value')) {
-                  if (localItem[key] !== undefined && localItem[key] !== null) {
-                    localItem[key] = String(localItem[key]);
-                  }
-                }
-              }
+          // Préparer tous les items
+          const mustBeString = [
+            'username', 'password', 'code', 'lotNumber', 'phone', 'dnpm',
+            'pharmacy_phone', 'pharmacy_dnpm', 'pharmacy_name', 'key', 'value'
+          ];
 
-              // Handle unique constraints
-              if (storeName === 'products' && localItem.code) {
-                const existing = await dbGetAll('products', 'code', !!localItem.code ? localItem.code : undefined);
-                if (existing.length > 0) {
-                  await _dbPutRaw(storeName, { ...localItem, id: existing[0].id });
-                  continue;
+          const preparedItems = allData.map(item => {
+            let localItem = { ...item, _synced: true, _updatedAt: item.updatedAt || Date.now() };
+            for (const key of Object.keys(localItem)) {
+              if (mustBeString.includes(key) || (storeName === 'settings' && key === 'value')) {
+                if (localItem[key] !== undefined && localItem[key] !== null) {
+                  localItem[key] = String(localItem[key]);
                 }
               }
-              if (storeName === 'stock' && localItem.productId) {
-                const existing = await dbGetAll('stock', 'productId', localItem.productId);
-                if (existing.length > 0) {
-                  await _dbPutRaw(storeName, { ...localItem, id: existing[0].id });
-                  continue;
-                }
-              }
-              if (storeName === 'settings' && localItem.key) {
-                await _dbPutRaw(storeName, localItem);
-                continue;
-              }
-              if (storeName === 'users' && localItem.username) {
-                const existing = await dbGetAll('users', 'username', localItem.username);
-                if (existing.length > 0) {
-                  await _dbPutRaw(storeName, { ...localItem, id: existing[0].id });
-                  continue;
-                }
-              }
+            }
+            return localItem;
+          }).filter(item => !(storeName === 'settings' && item.status === 'DELETED'));
 
-              await _dbPutRaw(storeName, localItem);
-            } catch (itemError) {
-              // Continue to next item silently
+          // ── BATCH WRITE : 500 items par transaction IndexedDB ──
+          const BATCH_SIZE = 500;
+          for (let i = 0; i < preparedItems.length; i += BATCH_SIZE) {
+            const batch = preparedItems.slice(i, i + BATCH_SIZE);
+            await new Promise((resolve, reject) => {
+              const tx = db.transaction(storeName, 'readwrite');
+              const store = tx.objectStore(storeName);
+              for (const item of batch) {
+                store.put(item);
+              }
+              tx.oncomplete = () => resolve();
+              tx.onerror = () => reject(tx.error);
+              tx.onabort = () => reject(tx.error);
+            });
+            // Pause de 10ms entre les batches pour laisser respirer le navigateur
+            if (i + BATCH_SIZE < preparedItems.length) {
+              await new Promise(r => setTimeout(r, 10));
             }
           }
+          console.log(`[Flash] ✅ ${storeName}: ${preparedItems.length} importés`);
         }
       } catch (storeErr) {
         if (!storeErr?.message?.includes('Failed to fetch')) {
           console.warn(`[Flash] Store error ${storeName}:`, storeErr);
         }
       }
-    }));
+    }
 
     console.log('[Flash] ⚡ Pull terminé — données locales à jour');
 
