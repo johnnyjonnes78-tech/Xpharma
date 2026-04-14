@@ -169,6 +169,24 @@ async function initDB() {
 
         try {
           const settings = await dbGetAll('settings');
+          const existingUrl = settings.find(s => s.key === 'supabase_url')?.value;
+
+          // Si l'URL Supabase change = nouvelle pharmacie → vider les données locales
+          if (existingUrl && existingUrl.trim() !== sbUrl.trim()) {
+            console.log('[Flash] Nouvelle pharmacie détectée — nettoyage des données locales...');
+            db.close();
+            db = null;
+            await new Promise((res, rej) => {
+              const delReq = indexedDB.deleteDatabase(DB_NAME);
+              delReq.onsuccess = () => res();
+              delReq.onerror = () => res();
+              delReq.onblocked = () => res();
+            });
+            // Recharger la page pour recréer la DB fraîche avec le nouveau Magic Link
+            window.location.reload();
+            return;
+          }
+
           const update = async (k, v) => {
             const ex = settings.find(s => s.key === k);
             if (ex) await dbPut('settings', { ...ex, value: v, updatedAt: Date.now() });
