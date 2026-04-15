@@ -316,6 +316,22 @@ window.toggleSupportWindow = function() {
     supportChatOpen = !supportChatOpen;
 }
 
+// Fonction pour vérifier si on est sur la page de login et masquer le widget
+function checkWidgetVisibility() {
+    const widget = document.getElementById('support-widget-container');
+    if (!widget) return;
+    const isLogin = document.getElementById('login-page') && document.getElementById('login-page').style.display !== 'none';
+    widget.style.display = isLogin ? 'none' : 'block';
+}
+
+// Observer les changements du DOM pour masquer/afficher selon la page
+const observer = new MutationObserver((mutations) => {
+    checkWidgetVisibility();
+});
+window.addEventListener('DOMContentLoaded', () => {
+    observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['style'] });
+});
+
 const FAQ_DATABASE = {
     'dette': "Pour gérer les ardoises, allez dans 'Point de Vente' et sélectionnez le paiement par 'Crédit'. Le plafond est configuré dans le dossier Patient.",
     'ventes': "Les ventes récentes se trouvent dans 'Historique des Ventes'. Cliquez sur l'œil noir pour voir ou annuler la facture.",
