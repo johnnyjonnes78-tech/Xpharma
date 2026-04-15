@@ -564,34 +564,14 @@ async function receiveOrder(orderId) {
   ]);
   if (!order) return;
 
-  const itemsHTML = (order.items || []).map((item, idx) => `
-    <div class="receive-item-row">
-      <div class="receive-item-info">
-        <strong>${item.productName}</strong>
-        <span class="text-muted text-sm">Commandé : ${item.quantity}</span>
-      </div>
-      <div class="receive-item-fields">
-        <div class="form-group">
-          <label>Qté reçue</label>
-          <input type="number" id="recv-qty-${idx}" class="form-control" value="${item.quantity}" min="0" max="${item.quantity}">
-        </div>
-        <div class="form-group">
-          <label>N° de Lot</label>
-          <input type="text" id="recv-lot-${idx}" class="form-control" placeholder="LOT-XXXX">
-        </div>
-        <div class="form-group">
-          <label>Date expiration</label>
-          <input type="date" id="recv-expiry-${idx}" class="form-control">
-        </div>
-        <div class="form-group">
-          <label>Conforme ?</label>
-          <select id="recv-conform-${idx}" class="form-control">
-            <option value="1">Conforme</option>
-            <option value="0">Non conforme</option>
-          </select>
-        </div>
-      </div>
-    </div>`).join('');
+  window._currentReceiveOrder = JSON.parse(JSON.stringify(order));
+  (window._currentReceiveOrder.items || []).forEach((item, idx) => {
+    item._recvQty = item.quantity;
+    item._recvLot = `LOT-AUTO-${Date.now()}-${idx}`;
+    item._recvExpiry = '';
+    item._recvConform = '1';
+  });
+  window._recvOrderPage = 1;
 
   UI.modal('<i data-lucide="package" class="modal-icon-inline"></i> Réception de Commande', `
     <div class="receive-form">
@@ -599,7 +579,7 @@ async function receiveOrder(orderId) {
         <code class="code-tag">${order.orderNumber}</code>
         <span>Date de réception : <strong>${new Date().toLocaleDateString('fr-FR')}</strong></span>
       </div>
-      <div id="receive-items">${itemsHTML}</div>
+      <div id="receive-items-container"></div>
       <div class="form-group" style="margin-top:16px">
         <label>Observations</label>
         <textarea id="recv-note" class="form-control" rows="2" placeholder="Dommages, manquants, non-conformités..."></textarea>
@@ -613,7 +593,66 @@ async function receiveOrder(orderId) {
     `
   });
   if (window.lucide) lucide.createIcons();
-  window._currentReceiveOrder = order;
+  
+  setTimeout(() => renderReceivePagination(), 100);
+}
+
+function renderReceivePagination(page) {
+  if (page !== undefined) window._recvOrderPage = page;
+  const p = window._recvOrderPage || 1;
+  const PAGE_SIZE = 50;
+  const items = window._currentReceiveOrder?.items || [];
+  const totalPages = Math.ceil(items.length / PAGE_SIZE) || 1;
+  const start = (p - 1) * PAGE_SIZE;
+  const pageItems = items.slice(start, start + PAGE_SIZE);
+
+  const itemsHTML = pageItems.map((item, localIdx) => {
+    const idx = start + localIdx;
+    return `
+    <div class="receive-item-row">
+      <div class="receive-item-info">
+        <strong>${item.productName}</strong>
+        <span class="text-muted text-sm">Commandé : ${item.quantity}</span>
+      </div>
+      <div class="receive-item-fields">
+        <div class="form-group">
+          <label>Qté reçue</label>
+          <input type="number" class="form-control" value="${item._recvQty}" min="0" max="${item.quantity}" onchange="window._currentReceiveOrder.items[${idx}]._recvQty = parseInt(this.value)||0">
+        </div>
+        <div class="form-group">
+          <label>N° de Lot</label>
+          <input type="text" class="form-control" value="${item._recvLot}" placeholder="LOT-XXXX" onchange="window._currentReceiveOrder.items[${idx}]._recvLot = this.value">
+        </div>
+        <div class="form-group">
+          <label>Date expiration</label>
+          <input type="date" class="form-control" value="${item._recvExpiry}" onchange="window._currentReceiveOrder.items[${idx}]._recvExpiry = this.value">
+        </div>
+        <div class="form-group">
+          <label>Conforme ?</label>
+          <select class="form-control" onchange="window._currentReceiveOrder.items[${idx}]._recvConform = this.value">
+            <option value="1" ${item._recvConform === '1' ? 'selected' : ''}>Conforme</option>
+            <option value="0" ${item._recvConform === '0' ? 'selected' : ''}>Non conforme</option>
+          </select>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+
+  let navHTML = '';
+  if (totalPages > 1) {
+    navHTML = `
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-top:16px; padding-top:16px; border-top:1px solid var(--border)">
+        <span class="text-muted text-sm">Page ${p} / ${totalPages} (${items.length} articles)</span>
+        <div style="display:flex; gap:8px">
+          <button class="btn btn-sm btn-secondary" onclick="renderReceivePagination(${p - 1})" ${p <= 1 ? 'disabled' : ''}>◀ Précédent</button>
+          <button class="btn btn-sm btn-secondary" onclick="renderReceivePagination(${p + 1})" ${p >= totalPages ? 'disabled' : ''}>Suivant ▶</button>
+        </div>
+      </div>
+    `;
+  }
+
+  const container = document.getElementById('receive-items-container');
+  if (container) container.innerHTML = itemsHTML + navHTML;
 }
 
 async function confirmReceiveOrder(orderId) {
@@ -625,14 +664,23 @@ async function confirmReceiveOrder(orderId) {
 
   for (let idx = 0; idx < (order.items || []).length; idx++) {
     const item = order.items[idx];
-    const qtyReceived = parseInt(document.getElementById(`recv-qty-${idx}`)?.value || 0);
-    const lotNumber = document.getElementById(`recv-lot-${idx}`)?.value || `LOT-AUTO-${Date.now()}-${idx}`;
-    const expiryDate = document.getElementById(`recv-expiry-${idx}`)?.value || '';
-    const conform = document.getElementById(`recv-conform-${idx}`)?.value === '1';
+    const qtyReceived = parseInt(item._recvQty) || 0;
+    const lotNumber = item._recvLot || `LOT-AUTO-${Date.now()}-${idx}`;
+    const expiryDate = item._recvExpiry || '';
+    const conform = item._recvConform === '1';
 
     if (!conform) hasNonConformity = true;
 
-    updatedItems.push({ ...item, receivedQty: qtyReceived, lotNumber, expiryDate, conform });
+    updatedItems.push({ 
+      productId: item.productId, 
+      productName: item.productName, 
+      quantity: item.quantity, 
+      unitPrice: item.unitPrice, 
+      receivedQty: qtyReceived, 
+      lotNumber, 
+      expiryDate, 
+      conform 
+    });
 
     if (qtyReceived > 0 && conform) {
       // Add to stock
@@ -703,24 +751,22 @@ async function viewOrder(orderId) {
     <div class="detail-row"><span>Date</span><span>${UI.formatDate(order.date)}</span></div>
     <div class="detail-row"><span>Livraison prévue</span><span>${order.expectedDate ? UI.formatDate(order.expectedDate) : '—'}</span></div>
     <div class="detail-row"><span>Statut</span><span><span class="badge badge-${order.status === 'received' ? 'success' : order.status === 'sent' ? 'info' : order.status === 'cancelled' ? 'danger' : order.status === 'partial' ? 'warning' : 'neutral'}">${({pending:'Brouillon',sent:'Envoyée',partial:'Partielle',received:'Reçue',cancelled:'Annulée'})[order.status] || order.status}</span></span></div>
-    <h4 style="margin:16px 0 8px">Articles</h4>
-    <table class="data-table">
-      <thead><tr><th>Produit</th><th>Qté commandée</th><th>Prix unit.</th><th>Total</th><th>Lot reçu</th></tr></thead>
-      <tbody>
-        ${(order.items || []).map(i => `
-          <tr>
-            <td>${i.productName}</td>
-            <td>${i.quantity}</td>
-            <td>${UI.formatCurrency(i.unitPrice || 0)}</td>
-            <td>${UI.formatCurrency((i.unitPrice || 0) * i.quantity)}</td>
-            <td>${i.lotNumber ? `<code>${i.lotNumber}</code>` : '—'}</td>
-          </tr>`).join('')}
-        <tr><td colspan="3"><strong>Total</strong></td><td><strong>${UI.formatCurrency(order.totalAmount || 0)}</strong></td><td></td></tr>
-      </tbody>
-    </table>
+    <h4 style="margin:16px 0 8px">Articles (Total: <strong>${UI.formatCurrency(order.totalAmount || 0)}</strong>)</h4>
+    <div id="view-order-items-table"></div>
     ${order.receiveNote ? `<p class="text-muted" style="margin-top:12px">Note réception : ${order.receiveNote}</p>` : ''}
   `, { size: 'large' });
   if (window.lucide) lucide.createIcons();
+
+  const container = document.getElementById('view-order-items-table');
+  if (container) {
+    UI.table(container, [
+      { label: 'Produit', render: r => r.productName },
+      { label: 'Qté commandée', render: r => r.quantity },
+      { label: 'Prix unit.', render: r => UI.formatCurrency(r.unitPrice || 0) },
+      { label: 'Total', render: r => UI.formatCurrency((r.unitPrice || 0) * r.quantity) },
+      { label: 'Lot reçu', render: r => r.lotNumber ? `<code class="code-tag">${r.lotNumber}</code>` : '—' }
+    ], order.items || [], { emptyMessage: 'Aucun article', pageSize: 50 });
+  }
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -813,6 +859,7 @@ window.submitOrder = submitOrder;
 window.filterOrders = filterOrders;
 window.sendOrder = sendOrder;
 window.receiveOrder = receiveOrder;
+window.renderReceivePagination = renderReceivePagination;
 window.confirmReceiveOrder = confirmReceiveOrder;
 window.viewOrder = viewOrder;
 window.showAddComplaint = showAddComplaint;
