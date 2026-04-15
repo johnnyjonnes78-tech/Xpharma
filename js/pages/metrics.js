@@ -603,15 +603,15 @@ window.exportMetricsCSV = function() {
     const data = window._metricsExportData || [];
     if(!data.length) { UI.toast("Aucune donnée à exporter pour cette période", "warning"); return; }
     
-    let csvStr = "\\uFEFFDate,Facture,Patient,Montant Total GNF,ModePaiement,Statut\\n";
+    let csvStr = "\uFEFFDate,Facture,Patient,Montant Total GNF,ModePaiement,Statut\n";
     data.forEach(s => {
-       csvStr += \`\${s.date},\${s.id},"\${(s.patientName||'Comptoir Vente Directe').replace(/"/g, '""')}",\${s.total},\${s.paymentMethod},\${s.status}\\n\`;
+       csvStr += `${s.date},${s.id},"${(s.patientName||'Comptoir Vente Directe').replace(/"/g, '""')}",${s.total},${s.paymentMethod},${s.status}\n`;
     });
     
     const blob = new Blob([csvStr], { type: 'text/csv;charset=utf-8;' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = \`Export_Pharma_BI_\${new Date().toISOString().split('T')[0]}.csv\`;
+    a.download = `Export_Pharma_BI_${new Date().toISOString().split('T')[0]}.csv`;
     a.click();
     UI.toast("Export complet !", "success");
 }

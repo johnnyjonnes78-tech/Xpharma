@@ -346,19 +346,19 @@ window.askQuestion = function(text, key) {
     oldActs.forEach(e => e.remove());
 
     // Add User Message
-    body.innerHTML += \`<div class="chat-bubble chat-user">\${text}</div>\`;
+    body.innerHTML += `<div class="chat-bubble chat-user">${text}</div>`;
     body.scrollTop = body.scrollHeight;
 
     // Simulate typing
     const typingId = 'typing-' + Date.now();
     setTimeout(() => {
-        body.innerHTML += \`<div id="\${typingId}" class="chat-bubble chat-bot" style="color:#888;">L'assistant rédige...</div>\`;
+        body.innerHTML += `<div id="${typingId}" class="chat-bubble chat-bot" style="color:#888;">L'assistant rédige...</div>`;
         body.scrollTop = body.scrollHeight;
         
         setTimeout(() => {
             const t = document.getElementById(typingId);
             if(t) t.remove();
-            body.innerHTML += \`<div class="chat-bubble chat-bot">\${FAQ_DATABASE[key] || "Je ne suis pas sûr de comprendre. Pouvez-vous contacter le support WhatsApp pour ça ?"}</div>\`;
+            body.innerHTML += `<div class="chat-bubble chat-bot">${FAQ_DATABASE[key] || "Je ne suis pas sûr de comprendre. Pouvez-vous contacter le support WhatsApp pour ça ?"}</div>`;
             
             setTimeout(() => {
                showOptions();
