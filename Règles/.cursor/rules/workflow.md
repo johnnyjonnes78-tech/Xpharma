@@ -108,7 +108,9 @@ WHERE schemaname = 'public' AND rowsecurity = false;
 
 | Date | Erreur rencontrée | Solution appliquée |
 |------|-------------------|-------------------|
-| *(à remplir)* | | |
+| 2026-04-17 | Import 50k produits freeze + crash navigateur | `dbBulkPut()` — 1 transaction IndexedDB par lot de 5000 au lieu de 50k transactions individuelles |
+| 2026-04-17 | Sidebar vide après login (rôle `manager` non reconnu) | Ajout puis suppression du rôle `manager`, standardisé sur `admin` uniquement |
+| 2026-04-17 | Erreur SQL `syntax error near TABLE` dans supabase_schema.sql | Fragment de code `CREATE TABLE pull_tracking` coupé en deux par erreur d'insertion |
 
 ---
 
@@ -118,4 +120,8 @@ WHERE schemaname = 'public' AND rowsecurity = false;
 
 | Date | Feature | Statut |
 |------|---------|--------|
-| *(à remplir)* | | `✅ Done` / `🚧 En cours` / `❌ Bloqué` |
+| 2026-04-17 | `dbBulkPut()` — Méthode d'import en masse IndexedDB | `✅ Done` |
+| 2026-04-17 | Import CSV médicaments optimisé (architecture 4 phases) | `✅ Done` |
+| 2026-04-17 | Import CSV patients (nouveau module complet) | `✅ Done` |
+| 2026-04-17 | Chatbot Naomie (renommage + conversation naturelle + FAQ enrichie) | `✅ Done` |
+| 2026-04-17 | Tracking push/pull Cloud (tables Supabase) | `✅ Done` |

@@ -111,4 +111,6 @@ if (!apiUrl) throw new Error('NEXT_PUBLIC_API_URL manquante')
 
 | Date | Décision | Raison |
 |------|----------|--------|
-| *(à remplir)* | | |
+| 2026-04-17 | Ajout de `dbBulkPut()` dans db.js | IndexedDB crashait avec 50k+ transactions individuelles. Une seule transaction par lot de 5000 règle le problème. |
+| 2026-04-17 | Architecture import en 4 phases (load, parse, bulk, result) | Séparer le parsing JS pur (rapide) de l'écriture DB (lourde) évite le freeze navigateur |
+| 2026-04-17 | Dédoublonnage par Map() en mémoire | Évite 50k requêtes `dbGetAll` individuelles pour vérifier les doublons |
