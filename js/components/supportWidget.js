@@ -325,7 +325,7 @@ function initSupportWidget() {
                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 14h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></svg>
                         </div>
                         <div>
-                            <div class="support-title">Aya — Assistant PharmaProjet</div>
+                            <div class="support-title">Naomie — Assistante PharmaProjet</div>
                             <div class="support-subtitle"><div class="support-status-dot"></div> Toujours disponible</div>
                         </div>
                     </div>
@@ -335,7 +335,7 @@ function initSupportWidget() {
                 </div>
                 <div class="support-body" id="support-chat-body">
                     <div class="chat-bubble chat-bot">
-                        Bonjour <strong>${firstName}</strong> ! 👋 Je suis Aya, votre assistante PharmaProjet. Comment puis-je vous aider aujourd'hui ?
+                        Bonjour <strong>${firstName}</strong> ! 👋 Je suis <strong>Naomie</strong>, votre assistante PharmaProjet. Comment puis-je vous aider aujourd'hui ?
                     </div>
                 </div>
                 <div class="support-footer">
@@ -485,6 +485,36 @@ const FAQ_DATABASE = [
         question: 'Comment consulter la notice d\'un médicament ?',
         answer: "Deux façons d'accéder à la notice :\n\n1. **Au POS** : Cliquez le bouton **ℹ️** sur la carte du produit ou dans le panier\n2. **Au Catalogue** : Ouvrez la fiche du produit\n\nLa notice affiche : Posologie, Précautions d'emploi, Contre-indications, Effets indésirables et le RCP complet. Vous pouvez aussi télécharger le PDF du laboratoire si disponible. 📖"
     },
+    {
+        keywords: ['menu', 'navigation', 'accès', 'section', 'module', 'page', 'aller', 'trouver', 'ouvrir'],
+        question: 'Comment naviguer dans le menu ?',
+        answer: "Le menu principal contient toutes les sections de PharmaProjet :\n\n🛒 **Point de Vente (POS)** — Faire une vente\n📦 **Gestion des Stocks** — Consulter et ajuster les stocks\n💊 **Catalogue Produits** — Gérer le catalogue médicaments\n👤 **Dossiers Patients** — Fiches et historiques patients\n📋 **Historique des Ventes** — Toutes les ventes effectuées\n🚚 **Fournisseurs & Achats** — Commandes et réceptions\n💰 **Caisse** — Encaissements du jour\n📊 **Tableau de Bord** — KPIs en temps réel\n📈 **Pilotage** — Analyses avancées\n🔔 **Alertes** — Ruptures et péremptions\n⚙️ **Paramètres** — Configuration complète"
+    },
+    {
+        keywords: ['retour', 'remboursement', 'échange', 'renvoyer', 'rendre', 'retourné'],
+        question: 'Comment gérer un retour de médicament ?',
+        answer: "Allez dans **Historique des Ventes** et trouvez la vente concernée.\n\nCliquez sur le bouton **« Retour »** 🔄. Vous pouvez :\n• Retourner **tout** ou **une partie** des articles\n• Choisir le **motif** du retour (erreur, péremption, contre-indication)\n• Choisir le **mode de remboursement** (Espèces, Mobile Money, Avoir)\n\nLe stock est automatiquement réajusté à la hausse après validation. ✅"
+    },
+    {
+        keywords: ['produit', 'médicament', 'ajouter', 'créer', 'catalogue', 'référence', 'nouveau'],
+        question: 'Comment ajouter un nouveau médicament ?',
+        answer: "Allez dans **Catalogue Produits** et cliquez **« + Nouveau Produit »** :\n\n📝 Renseignez :\n• Nom commercial, DCI (molécule), Marque\n• Forme (comprimé, sirop, injection...)\n• **Prix d'achat** et **prix de vente**\n• Stock minimum de sécurité\n• Doses, précautions, notice médicale (optionnels)\n\nN'oubliez pas de configurer les **lots et dates de péremption** dans la section stock après ! 💊"
+    },
+    {
+        keywords: ['utilisateur', 'employé', 'rôle', 'pharmacien', 'caissier', 'accès', 'compte', 'mot de passe'],
+        question: 'Comment gérer les accès utilisateurs ?',
+        answer: "Allez dans **Paramètres > Utilisateurs** (accès réservé au Manager/Admin) :\n\n👤 Vous pouvez créer des comptes avec différents rôles :\n• **Manager** — Accès complet (ventes, stocks, rapports, paramètres)\n• **Pharmacien** — Ventes, consultation stocks, patients\n• **Caissier** — Point de vente uniquement\n\nChaque connexion est **tracée dans l'audit** : qui a fait quoi et quand. 🔐"
+    },
+    {
+        keywords: ['paramètre', 'configuration', 'pharmacie', 'nom', 'logo', 'adresse', 'devise', 'monnaie'],
+        question: 'Comment configurer les paramètres de la pharmacie ?',
+        answer: "Allez dans **⚙️ Paramètres** puis :\n\n🏥 **Informations Pharmacie** : Nom, adresse, téléphone, numéro d'agrément, logo (affiché sur les reçus)\n💱 **Devise** : Choisissez votre monnaie locale (GNF, XOF, MAD...)\n🖨️ **Impression** : Format du reçu, texte de pied de page\n📱 **SMS** : Configuration du service d'envoi SMS\n☁️ **Cloud** : Clés Supabase pour la synchro multi-appareils\n\nTous les changements s'enregistrent et se synchronisent automatiquement. ⚙️"
+    },
+    {
+        keywords: ['mouvement', 'entrée', 'sortie', 'tracabilité', 'historique stock', 'journal'],
+        question: 'Comment voir les mouvements de stock ?',
+        answer: "Dans **Gestion des Stocks**, cliquez sur un produit puis sur **« Mouvements »** :\n\nVous verrez toutes les entrées et sorties :\n📥 **Entrée** — Réception fournisseur, ajustement inventaire\n📤 **Sortie** — Vente, perte, destruction\n🔄 **Ajustement** — Correction manuelle après inventaire\n\nChaque mouvement indique la date, l'utilisateur et la raison. C'est votre traçabilité complète pour les contrôles ! 📋"
+    },
 ];
 
 const GREETINGS = [
@@ -536,11 +566,13 @@ function showQuickOptions() {
     acts.className = 'support-actions';
     // Afficher les 6 sujets les plus fréquents
     const quickTopics = [
+        { label: '🗺️ Naviguer dans le menu', idx: 18 },
         { label: '💳 Crédits & Dettes', idx: 0 },
-        { label: '🛡️ Assurance', idx: 2 },
-        { label: '📦 Stock', idx: 5 },
-        { label: '💊 Déconditionnement', idx: 7 },
+        { label: '🚚 Commander des produits', idx: 6 },
+        { label: '📦 Gérer le stock', idx: 5 },
+        { label: '🔄 Retours', idx: 19 },
         { label: '📊 Statistiques', idx: 10 },
+        { label: '🛡️ Assurance', idx: 2 },
         { label: '🔄 Synchronisation', idx: 12 },
     ];
     acts.innerHTML = quickTopics.map(t => 
@@ -577,13 +609,13 @@ window.submitFreeQuestion = function() {
 
         const typingId = 'typing-' + Date.now();
         setTimeout(() => {
-            body.innerHTML += `<div id="${typingId}" class="chat-bubble chat-bot" style="color:#888;">Aya réfléchit...</div>`;
+            body.innerHTML += `<div id="${typingId}" class="chat-bubble chat-bot" style="color:#888;">Naomie réfléchit...</div>`;
             body.scrollTop = body.scrollHeight;
             setTimeout(() => {
                 const t = document.getElementById(typingId);
                 if(t) t.remove();
                 const name = getUserName().split(' ')[0];
-                body.innerHTML += `<div class="chat-bubble chat-bot">Hmm, je ne suis pas sûre de pouvoir répondre à cette question, ${name}. 🤔\n\nEssayez avec un mot-clé plus précis (ex: "stock", "crédit", "assurance"), ou contactez notre support humain via WhatsApp ci-dessous.\n\nVoici les sujets que je maîtrise :</div>`;
+                body.innerHTML += `<div class="chat-bubble chat-bot">Hmm, je ne suis pas sûre de pouvoir répondre à cette question, ${name}. 🤔<br><br>Essayez avec un mot-clé plus précis (ex: <strong>"stock"</strong>, <strong>"crédit"</strong>, <strong>"commande"</strong>, <strong>"fournisseur"</strong>), ou contactez notre support humain via WhatsApp ci-dessous.<br><br>Voici les sujets que je maîtrise :</div>`;
                 setTimeout(() => showQuickOptions(), 400);
                 body.scrollTop = body.scrollHeight;
             }, 1000);
@@ -603,8 +635,7 @@ function askQuestion(text, faqEntry) {
 
     const typingId = 'typing-' + Date.now();
     setTimeout(() => {
-        body.innerHTML += `<div id="${typingId}" class="chat-bubble chat-bot" style="color:#888;">Aya rédige...</div>`;
-        body.scrollTop = body.scrollHeight;
+        body.innerHTML += `<div id="${typingId}" class="chat-bubble chat-bot" style="color:#888;">Naomie rédige...</div>`;        body.scrollTop = body.scrollHeight;
         
         // Délai réaliste variant entre 800ms et 1500ms
         const delay = 800 + Math.random() * 700;
