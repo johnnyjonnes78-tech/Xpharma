@@ -723,53 +723,71 @@ async function processImportCSV(content) {
   let errors = 0;
   const total = lines.length - 1;
 
-  for (let i = 1; i < lines.length; i++) {
-    try {
-      // Simple CSV split (handling basic quotes)
-      const row = lines[i].split(sep).map(v => v.replace(/"/g, '').trim());
-      if (row.length < columns.length) continue;
+  // 1. Charger tous les produits existants d'un coup (Évite 50,000 requêtes unitaires)
+  const allExistingProducts = await DB.dbGetAll('products');
+  const codeMap = new Map();
+  allExistingProducts.forEach(p => codeMap.set(p.code.toLowerCase(), p));
 
-      const product = {
-        code: row[map.code],
-        name: row[map.name],
-        dci: map.dci !== -1 ? row[map.dci] : '',
-        brand: map.brand !== -1 ? row[map.brand] : '',
-        category: map.category !== -1 ? row[map.category] : 'Autre',
-        salePrice: parseFloat(row[map.salePrice].replace(/[^\d.]/g, '')) || 0,
-        purchasePrice: map.purchasePrice !== -1 ? parseFloat(row[map.purchasePrice].replace(/[^\d.]/g, '')) || 0 : 0,
-        requiresPrescription: map.rx !== -1 ? (row[map.rx].toLowerCase().includes('oui') || row[map.rx] === '1') : false,
-        minStock: 10,
-        status: 'active',
-        unit: 'boîte'
-      };
+  // 2. Traitement par lot (Batching) pour ne pas geler le navigateur
+  const BATCH_SIZE = 500;
+  
+  for (let i = 1; i < lines.length; i += BATCH_SIZE) {
+    const batch = lines.slice(i, i + BATCH_SIZE);
+    const dbOperations = [];
 
-      if (!product.code || !product.name) {
+    for (const line of batch) {
+      try {
+        const row = line.split(sep).map(v => v.replace(/"/g, '').trim());
+        if (row.length < columns.length) continue;
+
+        const product = {
+          code: row[map.code],
+          name: row[map.name],
+          dci: map.dci !== -1 ? row[map.dci] : '',
+          brand: map.brand !== -1 ? row[map.brand] : '',
+          category: map.category !== -1 ? row[map.category] : 'Autre',
+          salePrice: parseFloat(row[map.salePrice].replace(/[^\d.]/g, '')) || 0,
+          purchasePrice: map.purchasePrice !== -1 ? parseFloat(row[map.purchasePrice].replace(/[^\d.]/g, '')) || 0 : 0,
+          requiresPrescription: map.rx !== -1 ? (row[map.rx].toLowerCase().includes('oui') || row[map.rx] === '1') : false,
+          minStock: 10,
+          status: 'active',
+          unit: 'boîte'
+        };
+
+        if (!product.code || !product.name) {
+          errors++;
+          continue;
+        }
+
+        // Vérification ultra rapide depuis la Map
+        const existing = codeMap.get(product.code.toLowerCase());
+        
+        if (existing) {
+          dbOperations.push(DB.dbPut('products', { ...existing, ...product }));
+        } else {
+          dbOperations.push(DB.dbAdd('products', product));
+          // Ajouter au codeMap en cas de doublons dans le même fichier
+          codeMap.set(product.code.toLowerCase(), product);
+        }
+
+        imported++;
+      } catch (err) {
+        console.warn('Import row error:', err);
         errors++;
-        continue;
       }
-
-      // Smart Upsert: Check if code exists to avoid ConstraintError
-      const existing = await DB.dbGetAll('products', 'code', product.code);
-      if (existing.length > 0) {
-        // Update existing record
-        await DB.dbPut('products', { ...existing[0], ...product });
-      } else {
-        // Add new record
-        await DB.dbAdd('products', product);
-      }
-
-      imported++;
-
-      // UI Update
-      if (i % 5 === 0 || i === total) {
-        const pct = Math.round((i / total) * 100);
-        if (fill) fill.style.width = pct + '%';
-        if (status) status.textContent = `Importation : ${i} / ${total}...`;
-      }
-    } catch (err) {
-      console.warn('Import row error:', err);
-      errors++;
     }
+
+    // Exécuter le lot en parallèle
+    await Promise.all(dbOperations);
+
+    // Mettre à jour l'UI asynchronement et laisser respirer le navigateur (évite le freeze)
+    const currentProgress = Math.min(i + BATCH_SIZE - 1, total);
+    const pct = Math.round((currentProgress / total) * 100);
+    if (fill) fill.style.width = pct + '%';
+    if (status) status.textContent = `Importation : ${currentProgress} / ${total}...`;
+
+    // Pause de 10ms pour permettre au navigateur de rendre la barre de progression
+    await new Promise(r => setTimeout(r, 10));
   }
 
   // Final Results
