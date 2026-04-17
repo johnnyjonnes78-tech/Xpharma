@@ -758,6 +758,25 @@ async function syncToSupabase() {
     } catch(e) {}
 
     console.log(`[Flash] ⚡ Sync terminée — ${totalPendingCount} éléments envoyés`);
+
+    // ── TRACKING DU PUSH (SAUVEGARDE) POUR LE SUIVI ADMINISTRATEUR ──
+    if (totalPendingCount > 0) {
+      try {
+        const settings = await DB.dbGetAll('settings');
+        const pharmacyName = settings.find(s => s.key === 'pharmacy_name')?.value || 'Inconnu';
+        await sb.from('push_tracking').insert([{
+          device_id: currentDeviceId,
+          device_name: currentDeviceName,
+          pharmacy_name: pharmacyName,
+          user_name: AppState.currentUser?.name || AppState.currentUser?.username || 'Système',
+          items_pushed: totalPendingCount,
+          pushed_at: new Date().toISOString()
+        }]);
+      } catch (trackErr) {
+        // Silent error pour ne pas bloquer l'UI
+      }
+    }
+
   } catch (globalError) {
     console.error('[Flash] Critical sync error:', globalError);
   } finally {

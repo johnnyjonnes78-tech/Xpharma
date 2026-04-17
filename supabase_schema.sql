@@ -544,3 +544,18 @@ CREATE TABLE IF NOT EXISTS pull_tracking (
 ALTER TABLE pull_tracking ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "allow_insert" ON pull_tracking FOR INSERT WITH CHECK (true);
 CREATE POLICY "allow_select_admin" ON pull_tracking FOR SELECT USING (true);
+
+CREATE TABLE IF NOT EXISTS push_tracking (
+  id BIGSERIAL PRIMARY KEY,
+  device_id TEXT NOT NULL,
+  device_name TEXT,
+  pharmacy_name TEXT,
+  user_name TEXT,
+  pushed_at TIMESTAMPTZ DEFAULT NOW(),
+  items_pushed INTEGER DEFAULT 0,
+  ip_address TEXT
+);
+
+ALTER TABLE push_tracking ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "allow_insert" ON push_tracking FOR INSERT WITH CHECK (true);
+CREATE POLICY "allow_select_admin" ON push_tracking FOR SELECT USING (true);
