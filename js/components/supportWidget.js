@@ -718,7 +718,7 @@ const CONVERSATIONS = [
         triggers: ['je suis ou', 'ou suis je', 'quelle page', 'ou je suis', 'page actuelle', 'je me trouve', 'c est quoi cette page'],
         dynamic: true,
         getResponse: function() {
-            const hash = window.location.hash?.replace('#','') || '';
+            const page = (window.Router && window.Router.currentPage) ? window.Router.currentPage : 'dashboard';
             const pageNames = {
                 'pos': '🛒 Point de Vente (POS)',
                 'products': '💊 Catalogue Produits',
@@ -738,7 +738,7 @@ const CONVERSATIONS = [
                 'returns': '🔄 Retours',
                 'traceability': '🔍 Traçabilité',
             };
-            const pageName = pageNames[hash] || '📊 Tableau de Bord';
+            const pageName = pageNames[page] || '📊 Tableau de Bord';
             return `Vous êtes actuellement sur la page <strong>${pageName}</strong>, {name} ! 📍<br><br>Besoin d'aide pour utiliser cette section ? Demandez-moi ! 😊`;
         }
     },
@@ -843,7 +843,7 @@ window.submitFreeQuestion = function() {
                 }
             } else {
                 // Aucun match — réponse intelligente contextuelle
-                const page = window.location.hash?.replace('#','') || 'dashboard';
+                const page = (window.Router && window.Router.currentPage) ? window.Router.currentPage : 'dashboard';
                 const pageHints = {
                     'pos': 'Je vois que vous êtes au <strong>Point de Vente</strong>. Besoin d\'aide pour scanner un produit, gérer un crédit ou une assurance ?',
                     'products': 'Vous êtes dans le <strong>Catalogue Produits</strong>. Besoin d\'aide pour ajouter un médicament ou configurer le déconditionnement ?',
