@@ -175,7 +175,7 @@ async function showAddProduct() {
           <label>DCI (Nom générique) *</label>
           <div style="display:flex; gap:8px">
             <input type="text" name="dci" class="form-control" placeholder="Paracétamol" required>
-            <button type="button" class="btn btn-secondary btn-sm" onclick="simulerVidalCloud('product-form')" style="white-space:nowrap" title="Bdd Claude Bernard"><i data-lucide="cloud-lightning"></i> Base Médicale</button>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="simulerVidalCloud('product-form')" style="white-space:nowrap;flex-shrink:0" title="Base Médicale — Résumé des Caractéristiques du Produit"><i data-lucide="cloud-lightning"></i> Base RCP</button>
           </div>
         </div>
       </div>
@@ -374,7 +374,7 @@ async function editProductForm(id) {
           <label>DCI (Nom générique) *</label>
           <div style="display:flex;gap:8px">
             <input type="text" name="dci" class="form-control" value="${p.dci || ''}" required>
-            <button type="button" class="btn btn-secondary btn-sm" onclick="simulerVidalCloud('edit-product-form')" style="white-space:nowrap"><i data-lucide="cloud-lightning"></i> Base Médicale</button>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="simulerVidalCloud('edit-product-form')" style="white-space:nowrap;flex-shrink:0" title="Base Médicale — Résumé des Caractéristiques du Produit"><i data-lucide="cloud-lightning"></i> Base RCP</button>
           </div>
         </div>
       </div>
@@ -876,7 +876,7 @@ function simulerVidalCloud(formId) {
   if(btn) { btn.disabled = true; btn.innerHTML = '<i data-lucide="loader" class="spin"></i> Sync...'; if(window.lucide)lucide.createIcons(); }
   
   setTimeout(() => {
-     if(btn) { btn.disabled = false; btn.innerHTML = '<i data-lucide="cloud-lightning"></i> Base Médicale'; if(window.lucide)lucide.createIcons(); }
+     if(btn) { btn.disabled = false; btn.innerHTML = '<i data-lucide="cloud-lightning"></i> Base RCP'; if(window.lucide)lucide.createIcons(); }
      let data = null;
      if (dciStr.includes('parac') || dciStr.includes('paracetamol')) {
          data = { brand: form.brand.value || 'Doliprane', category: 'Antalgique', dosageInstructions: 'Adultes : 500mg à 1g par prise, espacées de 4h à 6h (Max 4g/j).\nEnfant : 15mg/kg toutes les 6 heures.', precautions: 'Prudence en cas de pathologie hépatique sévère ou de malnutrition chronique. Éviter la consommation d\'alcool.', contraindications: 'Hypersensibilité au paracétamol. Insuffisance hépatique sévère.', sideEffects: 'Rares : éruptions cutanées, thrombopénie.' };

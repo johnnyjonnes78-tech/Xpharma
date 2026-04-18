@@ -627,7 +627,7 @@ const CONVERSATIONS = [
     {
         triggers: ['qui es tu', 'c est quoi', 'tu es qui', 'ton nom', 'tu fais quoi', 'tu sers a quoi', 'quel est ton role'],
         responses: [
-            "Je suis <strong>Naomie</strong>, votre assistante virtuelle PharmaProjet ! 🤖💙<br><br>Je suis là pour vous guider dans l'utilisation de l'application : ventes, stocks, patients, fournisseurs, statistiques... Posez-moi n'importe quelle question !",
+            "Je suis <strong>Naomie</strong>, votre assistante virtuelle PharmaProjet ! 🤖💙<br><br>Je suis conçue pour vous guider dans l'utilisation complète de l'application : ventes, stocks, patients, fournisseurs, analyses financières...<br><br>Je connais <strong>plus de 25 sujets</strong> à fond ! Posez-moi n'importe quelle question, et si je ne sais pas répondre, je vous oriente vers le support humain via WhatsApp. 😊",
         ]
     },
     {
@@ -650,7 +650,60 @@ const CONVERSATIONS = [
             "Très bien ! N'hésitez pas à revenir quand vous voulez, {name}. Je suis toujours disponible ! 🌟",
         ]
     },
+    {
+        triggers: ['blague', 'rire', 'drole', 'humour', 'joke', 'raconte moi', 'amuse moi', 'ennui', 'je m ennuie'],
+        responses: [
+            "😄 Pourquoi le pharmacien est-il toujours calme ? Parce qu'il a toujours la bonne <strong>dose</strong> de patience ! 💊<br><br>Bon, trêve de plaisanterie, {name}, je suis prête à travailler !",
+            "😂 Un patient demande au pharmacien : « Avez-vous quelque chose contre le stress ? » — « Oui, ma démission ! » 😆<br><br>Allez {name}, je suis là pour vous faciliter la vie !",
+            "🤣 Quelle est la différence entre un pharmacien et un magicien ? Le pharmacien fait disparaître votre argent, le magicien fait disparaître un lapin ! 🐇<br><br>Plus sérieusement, {name}, comment puis-je vous aider ?",
+        ]
+    },
+    {
+        triggers: ['prix', 'combien coute', 'tarif', 'cout', 'abonnement', 'gratuit', 'licence', 'payer'],
+        responses: [
+            "PharmaProjet fonctionne sur modèle <strong>SaaS</strong> (Software as a Service). 💼<br><br>Pour les détails de tarification et les plans disponibles, contactez directement l'équipe <strong>TrillionX</strong> via WhatsApp ci-dessous. Ils vous feront une offre adaptée à votre pharmacie ! 📞",
+        ]
+    },
+    {
+        triggers: ['probleme', 'bug', 'erreur', 'marche pas', 'fonctionne pas', 'plante', 'crash', 'bloque', 'lent'],
+        responses: [
+            "Oh non, {name} ! 😟 Essayons de résoudre ça ensemble :<br><br>🔄 <strong>Étape 1</strong> : Rafraîchissez la page (Ctrl+Shift+R)<br>📱 <strong>Étape 2</strong> : Si c'est sur mobile, fermez et rouvrez l'app<br>💾 <strong>Étape 3</strong> : Allez dans Paramètres > Sauvegarde pour vérifier vos données<br><br>Si le problème persiste, contactez le <strong>support TrillionX</strong> via WhatsApp avec une capture d'écran de l'erreur. 🛠️",
+        ]
+    },
+    {
+        triggers: ['heure', 'quelle heure', 'date', 'quel jour', 'aujourd hui'],
+        responses: [
+            "Il est <strong>{time}</strong>, {name} ! ⏰<br>Nous sommes le <strong>{date}</strong>.<br><br>Bonne continuation dans votre journée de travail ! 💪",
+        ]
+    },
+    {
+        triggers: ['tu es belle', 'je t aime', 'jolie', 'mignonne', 'intelligente', 'geniale', 'formidable'],
+        responses: [
+            "Oh merci {name}, vous êtes trop gentil(le) ! 😊💙 Je suis juste un programme, mais ça me fait quand même plaisir ! Allez, revenons au travail — comment puis-je vous aider ?",
+            "Aww, {name} ! 🥰 C'est adorable ! Mais ma vraie beauté, c'est mes <strong>25+ sujets de connaissance</strong> sur la gestion de pharmacie ! Posez-moi une question, vous allez voir ! 😎",
+        ]
+    },
+    {
+        triggers: ['motivation', 'courage', 'fatigue', 'stress', 'dur', 'difficile', 'epuise'],
+        responses: [
+            "Courage {name} ! 💪🌟<br><br>Rappelez-vous : chaque ordonnance que vous servez, chaque patient que vous conseillez, <strong>vous changez des vies</strong>. Le métier de pharmacien est noble et essentiel.<br><br>Prenez une pause si nécessaire, et je serai là quand vous reviendrez ! ☕",
+            "Hey {name}, chaque grande pharmacie a été construite jour après jour ! 🏗️<br><br>Vous faites un travail remarquable. Et avec PharmaProjet, tout est automatisé pour vous libérer du temps. Utilisez-le pour vous reposer ! 😊💙",
+        ]
+    },
+    {
+        triggers: ['conseil', 'astuce', 'tips', 'recommandation', 'suggestion', 'ameliorer'],
+        responses: [
+            "Voici mes <strong>top astuces</strong> pour optimiser votre pharmacie, {name} ! 🎯<br><br>1️⃣ <strong>Scannez les codes-barres</strong> au POS — c'est 3x plus rapide<br>2️⃣ <strong>Configurez les alertes de stock</strong> pour ne jamais être en rupture<br>3️⃣ <strong>Utilisez les statistiques</strong> (Pilotage) pour identifier vos best-sellers<br>4️⃣ <strong>Faites un PULL cloud</strong> chaque semaine pour sécuriser vos données<br>5️⃣ <strong>Créez des fiches patients</strong> — les allergies sauvent des vies ! 💊",
+        ]
+    },
+    {
+        triggers: ['concurrent', 'meditect', 'comparaison', 'autre logiciel', 'alternative', 'mieux'],
+        responses: [
+            "PharmaProjet se distingue sur plusieurs points clés, {name} ! 🏆<br><br>✅ <strong>Offline-first</strong> — Fonctionne sans internet (essentiel en Afrique)<br>✅ <strong>FEFO automatique</strong> — Gestion des lots et péremptions en temps réel<br>✅ <strong>Multi-appareils</strong> — Synchronisation cloud entre PC et mobile<br>✅ <strong>Interactions médicamenteuses</strong> — 30+ alertes critiques intégrées<br>✅ <strong>Mobile Money</strong> — Orange Money, MTN MoMo natifs<br><br>Peu de solutions offrent tout ça sur le marché africain ! 💎",
+        ]
+    },
 ];
+
 
 function matchConversation(input) {
     const q = input.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/['']/g, ' ');
@@ -699,13 +752,29 @@ window.submitFreeQuestion = function() {
             const name = getUserName().split(' ')[0];
 
             if (convReply) {
-                // Réponse conversationnelle
-                const reply = convReply.replace(/\{name\}/g, name);
+                // Réponse conversationnelle avec variables dynamiques
+                const now = new Date();
+                const timeStr = now.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+                const dateStr = now.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+                const reply = convReply
+                    .replace(/\{name\}/g, name)
+                    .replace(/\{time\}/g, timeStr)
+                    .replace(/\{date\}/g, dateStr);
                 body.innerHTML += `<div class="chat-bubble chat-bot">${reply}</div>`;
                 setTimeout(() => showQuickOptions(), 400);
             } else {
-                // Aucun match
-                body.innerHTML += `<div class="chat-bubble chat-bot">Hmm, je ne suis pas sûre de pouvoir répondre à cette question, ${name}. 🤔<br><br>Essayez avec un mot-clé plus précis (ex: <strong>"stock"</strong>, <strong>"crédit"</strong>, <strong>"commande"</strong>, <strong>"fournisseur"</strong>), ou contactez notre support humain via WhatsApp ci-dessous.<br><br>Voici les sujets que je maîtrise :</div>`;
+                // Aucun match — réponse intelligente contextuelle
+                const page = window.location.hash?.replace('#','') || 'dashboard';
+                const pageHints = {
+                    'pos': 'Je vois que vous êtes au <strong>Point de Vente</strong>. Besoin d\'aide pour scanner un produit, gérer un crédit ou une assurance ?',
+                    'products': 'Vous êtes dans le <strong>Catalogue Produits</strong>. Besoin d\'aide pour ajouter un médicament ou configurer le déconditionnement ?',
+                    'stock': 'Vous êtes dans la <strong>Gestion des Stocks</strong>. Besoin d\'aide pour un inventaire ou voir les mouvements ?',
+                    'patients': 'Vous êtes dans les <strong>Dossiers Patients</strong>. Besoin d\'aide pour créer une fiche ou gérer les allergies ?',
+                    'suppliers': 'Vous êtes dans <strong>Fournisseurs & Achats</strong>. Besoin d\'aide pour créer une commande ou réceptionner une livraison ?',
+                    'sales': 'Vous êtes dans l\'<strong>Historique des Ventes</strong>. Besoin d\'aide pour encaisser une dette ou faire un retour ?',
+                };
+                const hint = pageHints[page] || 'Dites-moi ce que vous cherchez à faire, et je vous guiderai !';
+                body.innerHTML += `<div class="chat-bubble chat-bot">Hmm, je n'ai pas trouvé de réponse exacte à "<strong>${text}</strong>", ${name}. 🤔<br><br>${hint}<br><br>Vous pouvez aussi :<br>• Reformuler avec un mot-clé (<strong>stock</strong>, <strong>crédit</strong>, <strong>commande</strong>...)<br>• Cliquer un sujet ci-dessous<br>• Contacter le support humain via WhatsApp 👇</div>`;
                 setTimeout(() => showQuickOptions(), 400);
             }
             body.scrollTop = body.scrollHeight;
