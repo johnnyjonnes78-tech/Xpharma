@@ -238,15 +238,15 @@ async function renderMetrics(container) {
     // ═══════════════════════════════════════════
     container.innerHTML = `
       <!-- EN-TÊTE -->
-      <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:28px;">
+      <div class="bi-header" style="display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:28px;">
         <div>
-          <h1 style="font-size:26px; font-weight:800; margin:0; display:flex; align-items:center; gap:10px; color:var(--text);">
+          <h1 class="bi-title" style="font-size:26px; font-weight:800; margin:0; display:flex; align-items:center; gap:10px; color:var(--text);">
             <div style="width:40px;height:40px;background:rgba(27,111,174,0.12);border-radius:12px;display:flex;align-items:center;justify-content:center;"><i data-lucide="bar-chart-2" style="color:var(--primary-color);width:22px;height:22px;"></i></div>
             Business Intelligence
           </h1>
           <p style="font-size:13px; color:var(--text-muted); margin:4px 0 0 50px;">Analyse financière complète · ${products.length} produits · ${totalTransactions} transactions</p>
         </div>
-        <div style="display:flex; gap:8px; align-items:center;">
+        <div class="bi-header-actions" style="display:flex; gap:8px; align-items:center;">
           <input type="date" id="metrics-start-date" class="form-control" style="width:130px; font-size:12px; height:32px" value="${window._metricsStartDate || ''}" onchange="updateMetricsFilter()">
           <span style="color:var(--text-muted); font-size:12px">au</span>
           <input type="date" id="metrics-end-date" class="form-control" style="width:130px; font-size:12px; height:32px" value="${window._metricsEndDate || ''}" onchange="updateMetricsFilter()">

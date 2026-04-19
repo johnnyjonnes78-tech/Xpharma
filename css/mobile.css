@@ -1314,33 +1314,36 @@ img, canvas, video, iframe {
   }
 
   /* Metrics — En-tête BI + filtres dates responsive */
-  #app-content > div > div[style*="justify-content:space-between"][style*="margin-bottom:28px"] {
+  .bi-header {
     flex-direction: column !important;
     align-items: flex-start !important;
     gap: 12px !important;
   }
 
-  #app-content > div > div[style*="justify-content:space-between"][style*="margin-bottom:28px"] > div:last-child {
+  .bi-header-actions {
     flex-wrap: wrap !important;
     width: 100% !important;
     gap: 6px !important;
+    justify-content: flex-start !important;
   }
 
-  #app-content > div > div[style*="justify-content:space-between"][style*="margin-bottom:28px"] input[type="date"] {
-    width: 100px !important;
-    font-size: 11px !important;
-    height: 30px !important;
-    padding: 2px 4px !important;
+  .bi-header-actions input[type="date"] {
+    flex: 1 !important;
+    min-width: 110px !important;
+    max-width: 150px !important;
+    font-size: 12px !important;
+    padding: 0 4px !important;
   }
 
-  #app-content > div > div[style*="justify-content:space-between"][style*="margin-bottom:28px"] .btn {
-    font-size: 11px !important;
-    height: 30px !important;
-    padding: 0 8px !important;
+  .bi-header-actions .btn {
+    flex-grow: 1 !important;
+    min-width: 100% !important;
+    margin-top: 4px !important;
+    justify-content: center !important;
   }
 
   /* Metrics BI title */
-  #app-content h1[style*="font-size:26px"] {
+  .bi-title {
     font-size: 18px !important;
   }
 
