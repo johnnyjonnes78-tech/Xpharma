@@ -183,6 +183,7 @@ function renderPrescriptionsTable(data) {
   UI.table(container, columns, data, {
     emptyMessage: 'Aucune ordonnance trouvée',
     emptyIcon: 'file-text',
+    pageSize: 20
   });
   if (window.lucide) lucide.createIcons();
 }
