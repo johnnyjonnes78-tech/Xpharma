@@ -936,8 +936,8 @@ async function pullFromSupabase(isManual = false) {
           // Log silencieux en production
         }
       } catch (storeErr) {
-        if (!storeErr?.message?.includes('Failed to fetch')) {
-          console.warn(`[Flash] Store error ${storeName}:`, storeErr);
+        if (storeErr && !storeErr?.message?.includes('Failed to fetch')) {
+          console.warn(`[Flash] Store error ${storeName}:`, storeErr?.message || storeErr);
         }
       }
     }
