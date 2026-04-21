@@ -1,0 +1,998 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OrdiveX — Guide Utilisateur Complet</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #0B3D6F;
+      --accent: #2ECC71;
+      --bg: #F8FAFC;
+      --surface: #FFFFFF;
+      --text: #1E293B;
+      --muted: #64748B;
+      --border: #E2E8F0;
+      --danger: #E74C3C;
+      --warning: #F39C12;
+      --info: #3498DB;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.7;
+      font-size: 15px;
+    }
+    .guide-container {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 24px 20px 80px;
+    }
+
+    /* COVER */
+    .cover {
+      background: linear-gradient(135deg, #0B3D6F 0%, #1a5a9e 50%, #2980b9 100%);
+      border-radius: 24px;
+      padding: 60px 40px;
+      color: white;
+      text-align: center;
+      margin-bottom: 40px;
+      position: relative;
+      overflow: hidden;
+    }
+    .cover::before {
+      content: '';
+      position: absolute;
+      top: -100px; right: -60px;
+      width: 300px; height: 300px;
+      background: radial-gradient(circle, rgba(255,255,255,0.08) 0%, transparent 70%);
+      border-radius: 50%;
+    }
+    .cover h1 { font-size: 42px; font-weight: 800; margin-bottom: 8px; letter-spacing: -1px; }
+    .cover h1 span { color: var(--accent); }
+    .cover .subtitle { font-size: 18px; opacity: 0.9; margin-bottom: 20px; }
+    .cover .version { background: rgba(255,255,255,0.15); padding: 6px 20px; border-radius: 20px; display: inline-block; font-size: 13px; font-weight: 600; }
+
+    /* TOC */
+    .toc {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 28px 32px;
+      margin-bottom: 40px;
+    }
+    .toc h2 { font-size: 20px; margin-bottom: 16px; color: var(--primary); }
+    .toc ol { padding-left: 20px; }
+    .toc li { margin-bottom: 6px; }
+    .toc a { color: var(--primary); text-decoration: none; font-weight: 500; }
+    .toc a:hover { text-decoration: underline; }
+
+    /* SECTIONS */
+    .section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 32px;
+      margin-bottom: 28px;
+      page-break-inside: avoid;
+    }
+    .section h2 {
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--primary);
+      border-bottom: 3px solid var(--primary);
+      padding-bottom: 10px;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .section h3 {
+      font-size: 17px;
+      font-weight: 700;
+      color: var(--text);
+      margin: 24px 0 12px;
+      padding-left: 12px;
+      border-left: 4px solid var(--accent);
+    }
+    .section h4 {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--muted);
+      margin: 16px 0 8px;
+    }
+    .section p { margin-bottom: 12px; }
+    .section ul, .section ol { padding-left: 20px; margin-bottom: 12px; }
+    .section li { margin-bottom: 6px; }
+
+    /* SPECIAL BOXES */
+    .tip, .warning, .important, .example {
+      padding: 16px 20px;
+      border-radius: 12px;
+      margin: 16px 0;
+      font-size: 14px;
+    }
+    .tip { background: #F0FFF4; border-left: 4px solid var(--accent); }
+    .warning { background: #FFFBEB; border-left: 4px solid var(--warning); }
+    .important { background: #EFF6FF; border-left: 4px solid var(--info); }
+    .example { background: #F8FAFC; border: 1px dashed var(--border); }
+
+    .tip strong, .warning strong, .important strong { display: block; margin-bottom: 4px; }
+
+    /* STEPS */
+    .steps { counter-reset: step; padding-left: 0; list-style: none; }
+    .steps li {
+      counter-increment: step;
+      padding: 12px 16px 12px 50px;
+      position: relative;
+      margin-bottom: 8px;
+      background: #F8FAFC;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+    }
+    .steps li::before {
+      content: counter(step);
+      position: absolute;
+      left: 12px;
+      top: 12px;
+      width: 28px;
+      height: 28px;
+      background: var(--primary);
+      color: white;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 13px;
+    }
+
+    /* KEYBOARD */
+    kbd {
+      background: #E2E8F0;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-family: 'JetBrains Mono', monospace;
+      border: 1px solid #CBD5E1;
+    }
+
+    /* TABLE */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 16px 0;
+      font-size: 14px;
+    }
+    th, td {
+      padding: 10px 14px;
+      border: 1px solid var(--border);
+      text-align: left;
+    }
+    th { background: var(--primary); color: white; font-weight: 600; }
+    tr:nth-child(even) { background: #F8FAFC; }
+
+    /* NAOMIE CHAT EXAMPLE */
+    .chat-example {
+      background: #F1F5F9;
+      border-radius: 16px;
+      padding: 20px;
+      margin: 16px 0;
+    }
+    .chat-ex-user, .chat-ex-bot {
+      padding: 10px 16px;
+      border-radius: 12px;
+      margin-bottom: 8px;
+      max-width: 80%;
+      font-size: 14px;
+    }
+    .chat-ex-user {
+      background: var(--primary);
+      color: white;
+      margin-left: auto;
+      border-bottom-right-radius: 4px;
+    }
+    .chat-ex-bot {
+      background: white;
+      border: 1px solid var(--border);
+      border-bottom-left-radius: 4px;
+    }
+
+    /* PRINT */
+    @media print {
+      body { font-size: 12px; }
+      .cover { padding: 30px 20px; }
+      .cover h1 { font-size: 28px; }
+      .section { break-inside: avoid; }
+      .guide-container { max-width: 100%; padding: 0; }
+    }
+
+    /* MOBILE */
+    @media (max-width: 768px) {
+      .cover { padding: 40px 20px; }
+      .cover h1 { font-size: 28px; }
+      .section { padding: 20px; }
+      .section h2 { font-size: 18px; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="guide-container">
+
+  <!-- ═══════════════════════════════════════ COUVERTURE ═══════════════════════════════════════ -->
+  <div class="cover">
+    <h1>Ordive<span>X</span></h1>
+    <p class="subtitle">Guide Utilisateur Complet — ERP Pharmaceutique</p>
+    <div class="version">Version 4.4 — Édition 2026</div>
+    <p style="margin-top:20px;font-size:13px;opacity:0.7">Conçu et développé par <strong>TrillionX</strong> 🚀</p>
+  </div>
+
+  <!-- ═══════════════════════════════════════ TABLE DES MATIÈRES ═══════════════════════════════════════ -->
+  <div class="toc">
+    <h2>📑 Table des Matières</h2>
+    <ol>
+      <li><a href="#intro">Présentation d'OrdiveX</a></li>
+      <li><a href="#prereqs">Prérequis & Installation</a></li>
+      <li><a href="#connexion">Connexion & Rôles Utilisateurs</a></li>
+      <li><a href="#navigation">Navigation dans l'Interface</a></li>
+      <li><a href="#dashboard">Tableau de Bord</a></li>
+      <li><a href="#pos">Point de Vente (POS)</a></li>
+      <li><a href="#catalogue">Catalogue Produits</a></li>
+      <li><a href="#stock">Gestion des Stocks</a></li>
+      <li><a href="#ordonnances">Ordonnances</a></li>
+      <li><a href="#patients">Dossiers Patients</a></li>
+      <li><a href="#fournisseurs">Fournisseurs & Achats</a></li>
+      <li><a href="#caisse">Caisse Journalière</a></li>
+      <li><a href="#ventes">Historique des Ventes & Retours</a></li>
+      <li><a href="#metrics">Business Intelligence (Métriques)</a></li>
+      <li><a href="#alertes">Centre d'Alertes</a></li>
+      <li><a href="#tracabilite">Traçabilité & Pharmacovigilance</a></li>
+      <li><a href="#impression">Centre d'Impression</a></li>
+      <li><a href="#parametres">Paramètres & Administration</a></li>
+      <li><a href="#naomie">🤖 Naomie — L'Assistante IA</a></li>
+      <li><a href="#cloud">Synchronisation Cloud Multi-Appareils</a></li>
+      <li><a href="#mobile">Utilisation sur Mobile</a></li>
+      <li><a href="#raccourcis">Raccourcis Clavier</a></li>
+      <li><a href="#depannage">Dépannage & FAQ</a></li>
+    </ol>
+  </div>
+
+  <!-- ═══════ 1. PRÉSENTATION ═══════ -->
+  <div class="section" id="intro">
+    <h2>1. 🏥 Présentation d'OrdiveX</h2>
+    <p><strong>OrdiveX</strong> est un ERP (Enterprise Resource Planning) pharmaceutique conçu spécifiquement pour les pharmacies d'Afrique francophone. Il permet de gérer l'intégralité de votre officine depuis un seul outil :</p>
+    <ul>
+      <li>🛒 <strong>Ventes</strong> — POS ultra-rapide avec scan code-barres</li>
+      <li>📦 <strong>Stocks</strong> — Gestion automatique FEFO (First Expired, First Out)</li>
+      <li>💊 <strong>Catalogue</strong> — 50 000+ produits avec DCI, formes, et notices</li>
+      <li>📋 <strong>Ordonnances</strong> — Enregistrement numérique avec interactions médicamenteuses</li>
+      <li>👤 <strong>Patients</strong> — Dossiers complets avec allergies et historique</li>
+      <li>🚚 <strong>Fournisseurs</strong> — Commandes, réceptions, évaluation</li>
+      <li>📊 <strong>Analyses</strong> — Tableau de bord, métriques financières, tendances</li>
+      <li>🤖 <strong>Naomie</strong> — Assistante IA intégrée qui vous guide en temps réel</li>
+      <li>☁️ <strong>Cloud</strong> — Synchronisation entre PC, tablette et mobile</li>
+      <li>📴 <strong>Offline-first</strong> — Fonctionne à 100% sans internet</li>
+    </ul>
+
+    <div class="important">
+      <strong>💡 Philosophie Offline-First</strong>
+      OrdiveX fonctionne SANS internet. Toutes vos données sont stockées localement sur votre appareil. La connexion internet n'est utilisée QUE pour la synchronisation cloud entre plusieurs appareils.
+    </div>
+  </div>
+
+  <!-- ═══════ 2. PRÉREQUIS ═══════ -->
+  <div class="section" id="prereqs">
+    <h2>2. 🔧 Prérequis & Installation</h2>
+    <h3>Configuration minimale</h3>
+    <table>
+      <tr><th>Composant</th><th>Minimum</th><th>Recommandé</th></tr>
+      <tr><td>Navigateur</td><td>Chrome 90+ / Safari 15+</td><td>Chrome 120+ / Edge</td></tr>
+      <tr><td>Écran</td><td>Smartphone 5"</td><td>Tablette 10" ou PC</td></tr>
+      <tr><td>RAM</td><td>2 Go</td><td>4 Go+</td></tr>
+      <tr><td>Internet</td><td>Non requis</td><td>3G pour la sync cloud</td></tr>
+    </table>
+
+    <h3>Installation PWA (Application Mobile)</h3>
+    <ol class="steps">
+      <li>Ouvrez <strong>OrdiveX</strong> dans Chrome ou Safari sur votre téléphone</li>
+      <li>Un bandeau bleu « 📲 Installer OrdiveX » apparaît en bas de l'écran — cliquez <strong>Installer</strong></li>
+      <li>Si le bandeau n'apparaît pas : cliquez le menu ⋮ (Chrome) ou le bouton Partager (Safari) → <strong>« Ajouter à l'écran d'accueil »</strong></li>
+      <li>L'icône OrdiveX apparaît sur votre écran d'accueil — lancez-la comme une vraie application !</li>
+    </ol>
+    <div class="tip">
+      <strong>✅ Astuce</strong>
+      En mode PWA, l'app se lance sans les barres du navigateur, comme une vraie application native.
+    </div>
+  </div>
+
+  <!-- ═══════ 3. CONNEXION ═══════ -->
+  <div class="section" id="connexion">
+    <h2>3. 🔐 Connexion & Rôles Utilisateurs</h2>
+    <h3>Page de connexion</h3>
+    <p>Au lancement, OrdiveX affiche un écran de connexion sécurisé. Entrez votre <strong>identifiant</strong> et <strong>mot de passe</strong> fournis par l'administrateur.</p>
+
+    <h3>Les 3 rôles disponibles</h3>
+    <table>
+      <tr><th>Rôle</th><th>Accès</th><th>Pour qui ?</th></tr>
+      <tr>
+        <td><strong>Administrateur</strong></td>
+        <td>Accès complet : ventes, stocks, produits, rapports, paramètres, gestion des utilisateurs, audit</td>
+        <td>Titulaire de la pharmacie, gérant</td>
+      </tr>
+      <tr>
+        <td><strong>Pharmacien</strong></td>
+        <td>Ventes, stocks, ordonnances, patients, fournisseurs, rapports (sans paramètres ni gestion des comptes)</td>
+        <td>Pharmacien assistant, préparateur diplômé</td>
+      </tr>
+      <tr>
+        <td><strong>Caissier</strong></td>
+        <td>Point de Vente uniquement + Caisse + Historique des ventes</td>
+        <td>Personnel de caisse</td>
+      </tr>
+    </table>
+
+    <div class="warning">
+      <strong>⚠️ Sécurité</strong>
+      Chaque connexion et action est <strong>tracée dans le journal d'audit</strong>. Ne partagez jamais vos identifiants.
+    </div>
+  </div>
+
+  <!-- ═══════ 4. NAVIGATION ═══════ -->
+  <div class="section" id="navigation">
+    <h2>4. 🧭 Navigation dans l'Interface</h2>
+    <h3>La barre latérale (Sidebar)</h3>
+    <p>Le menu principal se trouve dans la <strong>barre latérale gauche</strong>. Sur mobile, appuyez sur le bouton <strong>☰</strong> (hamburger) en haut à gauche pour l'ouvrir.</p>
+    <p>Les sections du menu sont :</p>
+    <table>
+      <tr><th>Section</th><th>Pages</th></tr>
+      <tr><td>Principal</td><td>Tableau de Bord, Point de Vente, Caisse Journalière</td></tr>
+      <tr><td>Stock & Produits</td><td>Catalogue Produits, Gestion des Stocks, Réapprovisionnement</td></tr>
+      <tr><td>Ordonnances & Patients</td><td>Ordonnances, Dossiers Patients</td></tr>
+      <tr><td>Achats</td><td>Fournisseurs, Bons de Commande</td></tr>
+      <tr><td>Traçabilité</td><td>Traçabilité & Pharmacovigilance</td></tr>
+      <tr><td>Analytique</td><td>Historique Ventes, Retours, Rapports, Métriques Business</td></tr>
+      <tr><td>Administration</td><td>Centre d'Impression, Alertes, Paramètres</td></tr>
+    </table>
+
+    <h3>La barre supérieure (Topbar)</h3>
+    <p>En haut de l'écran, vous trouverez :</p>
+    <ul>
+      <li>☰ Menu (mobile)</li>
+      <li>🔔 Alertes — avec badge rouge si alertes non lues</li>
+      <li>🖨️ Accès rapide à l'impression</li>
+      <li>💾 Sauvegarde rapide</li>
+      <li>🌙 Bascule thème sombre/clair</li>
+      <li>⚙️ Paramètres (admin uniquement)</li>
+      <li>📱 Moniteur de réseau multi-appareils</li>
+    </ul>
+  </div>
+
+  <!-- ═══════ 5. DASHBOARD ═══════ -->
+  <div class="section" id="dashboard">
+    <h2>5. 📊 Tableau de Bord</h2>
+    <p>Le Tableau de Bord est la première page après connexion. Il affiche en un coup d'œil :</p>
+    <h3>KPIs du jour</h3>
+    <ul>
+      <li><strong>Chiffre d'Affaires</strong> — Total des ventes du jour</li>
+      <li><strong>Nombre de ventes</strong> — Transactions effectuées</li>
+      <li><strong>Panier Moyen</strong> — CA / Nombre de ventes</li>
+      <li><strong>Marge Brute</strong> — Bénéfice après coûts d'achat</li>
+    </ul>
+    <h3>Graphiques</h3>
+    <ul>
+      <li><strong>Tendance des ventes</strong> — Courbe sur les 15 derniers jours</li>
+      <li><strong>Répartition des paiements</strong> — Donut (Espèces, Orange Money, MTN MoMo, Crédit, Assurance)</li>
+    </ul>
+    <h3>Panneaux</h3>
+    <ul>
+      <li><strong>Top Produits</strong> — Les 5 médicaments les plus vendus avec leur CA</li>
+      <li><strong>Alertes Récentes</strong> — Stock bas, expirations critiques</li>
+      <li><strong>Stocks Bas</strong> — Produits sous le seuil d'alerte avec jauge visuelle</li>
+    </ul>
+  </div>
+
+  <!-- ═══════ 6. POS ═══════ -->
+  <div class="section" id="pos">
+    <h2>6. 🛒 Point de Vente (POS)</h2>
+    <p>Le POS est le cœur d'OrdiveX. C'est ici que vous réalisez les ventes quotidiennes.</p>
+
+    <h3>Faire une vente — Procédure pas-à-pas</h3>
+    <ol class="steps">
+      <li><strong>Rechercher un produit</strong> : Tapez le nom, la DCI ou le code-barres dans la barre de recherche. Les résultats apparaissent instantanément.</li>
+      <li><strong>Ajouter au panier</strong> : Cliquez sur la carte du produit. Il s'ajoute au panier à droite avec une quantité de 1.</li>
+      <li><strong>Ajuster la quantité</strong> : Utilisez les boutons <strong>+</strong> et <strong>-</strong> dans le panier, ou cliquez sur la quantité pour la saisir manuellement.</li>
+      <li><strong>Identifier le patient</strong> (optionnel) : Cliquez <strong>« + Patient »</strong> pour sélectionner ou créer un patient. Ses allergies seront vérifiées automatiquement.</li>
+      <li><strong>Choisir le mode de paiement</strong> : Espèces, Orange Money, MTN MoMo, Crédit (à terme), ou Assurance.</li>
+      <li><strong>Valider la vente</strong> : Cliquez <strong>« Valider »</strong>. Un reçu est généré. Le stock est automatiquement décrémenté.</li>
+    </ol>
+
+    <h3>Vente à l'unité (Déconditionnement)</h3>
+    <p>Pour les produits configurés en déconditionnement, des boutons apparaissent :</p>
+    <ul>
+      <li><strong>Boîte</strong> — Vend la boîte entière</li>
+      <li><strong>Plaquette</strong> — Vend une plaquette (sous-unité)</li>
+      <li><strong>Unité</strong> — Vend un comprimé/gélule individuel</li>
+    </ul>
+
+    <h3>Vente à Crédit</h3>
+    <ol class="steps">
+      <li>Sélectionnez le mode de paiement <strong>« Crédit »</strong></li>
+      <li>Identifiez obligatoirement le patient</li>
+      <li>Choisissez la <strong>date d'échéance</strong> du paiement</li>
+      <li>Validez. La dette apparaîtra dans l'Historique des Ventes.</li>
+    </ol>
+
+    <h3>Vente avec Assurance</h3>
+    <ol class="steps">
+      <li>Sélectionnez <strong>« Assurance »</strong> comme mode de paiement</li>
+      <li>Renseignez le nom de l'organisme (CNSS, ASCOMA, etc.)</li>
+      <li>Entrez la <strong>référence de prise en charge</strong></li>
+      <li>Indiquez le <strong>montant couvert</strong> par l'assurance</li>
+      <li>OrdiveX calcule automatiquement le <strong>ticket modérateur</strong> (la part patient)</li>
+    </ol>
+
+    <h3>Vente avec Ordonnance</h3>
+    <ol class="steps">
+      <li>Activez le toggle <strong>« Ordonnance »</strong> en haut du panier</li>
+      <li>Cliquez <strong>« Lier une ordonnance »</strong></li>
+      <li>Sélectionnez une ordonnance existante ou créez-en une nouvelle</li>
+      <li>Les produits prescrits sont automatiquement ajoutés au panier</li>
+    </ol>
+
+    <div class="tip">
+      <strong>✅ Scan Code-Barres</strong>
+      Utilisez la touche <kbd>F9</kbd> ou cliquez l'icône 📷 pour activer le scanner. Sur mobile, la caméra arrière s'active automatiquement.
+    </div>
+
+    <div class="warning">
+      <strong>⚠️ Alertes automatiques au POS</strong>
+      OrdiveX vous alertera automatiquement si :
+      <ul style="margin-top:6px">
+        <li>Un produit est en <strong>rupture de stock</strong></li>
+        <li>Un lot est <strong>périmé ou proche de l'expiration</strong></li>
+        <li>Une <strong>interaction médicamenteuse</strong> est détectée entre deux produits du panier</li>
+        <li>Le patient a une <strong>allergie</strong> connue à un produit du panier</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ═══════ 7. CATALOGUE ═══════ -->
+  <div class="section" id="catalogue">
+    <h2>7. 💊 Catalogue Produits</h2>
+    <p>Le catalogue contient tous les médicaments et produits parapharmaceutiques de votre pharmacie.</p>
+
+    <h3>Ajouter un nouveau produit</h3>
+    <ol class="steps">
+      <li>Cliquez <strong>« + Nouveau Produit »</strong></li>
+      <li>Renseignez : <strong>Nom commercial</strong>, <strong>DCI</strong> (molécule), <strong>Marque</strong></li>
+      <li>Sélectionnez la <strong>forme galénique</strong> : Comprimé, Sirop, Injectable, Gel, Tube, Sachet, etc.</li>
+      <li>Entrez le <strong>Prix d'achat</strong> et le <strong>Prix de vente</strong></li>
+      <li>Configurez le <strong>stock minimum de sécurité</strong> (seuil d'alerte)</li>
+      <li>Optionnel : Ajoutez la notice médicale, les précautions, les contre-indications</li>
+      <li>Optionnel : Activez le <strong>déconditionnement</strong> (vente à la plaquette/unité)</li>
+    </ol>
+
+    <h3>Import massif CSV</h3>
+    <p>Pour importer un catalogue complet (jusqu'à <strong>50 000 produits</strong>) :</p>
+    <ol class="steps">
+      <li>Cliquez <strong>« Importer CSV »</strong></li>
+      <li>Sélectionnez votre fichier CSV (colonnes : name, dci, brand, form, buyPrice, sellPrice, minStock, category...)</li>
+      <li>OrdiveX traite les produits par lots de 100 pour éviter tout blocage</li>
+      <li>Un rapport d'import s'affiche à la fin</li>
+    </ol>
+  </div>
+
+  <!-- ═══════ 8. STOCK ═══════ -->
+  <div class="section" id="stock">
+    <h2>8. 📦 Gestion des Stocks</h2>
+
+    <h3>Vue d'ensemble</h3>
+    <p>La page Stock affiche tous vos produits avec :</p>
+    <ul>
+      <li>Quantité en stock (temps réel)</li>
+      <li>Stock minimum configuré</li>
+      <li>Statut : <span style="color:green">✅ OK</span> / <span style="color:orange">⚠️ Bas</span> / <span style="color:red">🔴 Rupture</span></li>
+      <li>Lots associés avec dates de péremption</li>
+    </ul>
+
+    <h3>Méthode FEFO</h3>
+    <p>OrdiveX utilise automatiquement la méthode <strong>FEFO (First Expired, First Out)</strong> : lors d'une vente, c'est toujours le lot avec la <strong>date de péremption la plus proche</strong> qui est décrémenté en priorité.</p>
+
+    <h3>Inventaire</h3>
+    <ol class="steps">
+      <li>Recherchez le produit à inventorier via la <strong>barre de recherche</strong> (autocomplete)</li>
+      <li>Cliquez sur le produit pour voir ses détails</li>
+      <li>Cliquez <strong>« Inventaire »</strong> pour ajuster la quantité réelle</li>
+      <li>Entrez la <strong>quantité comptée physiquement</strong></li>
+      <li>OrdiveX calcule et enregistre automatiquement l'écart (perte ou excédent)</li>
+    </ol>
+
+    <h3>Mouvements de stock</h3>
+    <p>Chaque entrée ou sortie est enregistrée avec :</p>
+    <ul>
+      <li>📥 <strong>Entrée</strong> : Réception fournisseur, ajustement inventaire positif</li>
+      <li>📤 <strong>Sortie</strong> : Vente, perte, destruction, ajustement négatif</li>
+      <li>Date, heure, utilisateur et motif de chaque mouvement</li>
+    </ul>
+  </div>
+
+  <!-- ═══════ 9. ORDONNANCES ═══════ -->
+  <div class="section" id="ordonnances">
+    <h2>9. 📋 Ordonnances</h2>
+    <p>Le module Ordonnances permet l'enregistrement numérique des prescriptions avec contrôle pharmaceutique.</p>
+
+    <h3>Créer une ordonnance</h3>
+    <ol class="steps">
+      <li>Cliquez <strong>« + Nouvelle Ordonnance »</strong></li>
+      <li><strong>Patient</strong> : Sélectionnez un patient existant ou créez-en un. Si le patient a des allergies connues, elles sont affichées.</li>
+      <li><strong>Médecin</strong> : Entrez le nom, la spécialité, le N° d'Ordre et l'établissement du prescripteur.</li>
+      <li><strong>Date</strong> : Date de prescription et date de validité (3 mois par défaut).</li>
+      <li><strong>Médicaments</strong> : Cliquez « + Ajouter » pour ajouter chaque médicament prescrit avec quantité, posologie et unité.</li>
+      <li><strong>Options</strong> : Cochez « Renouvelable » si nécessaire. Ajoutez une note pharmacien si besoin.</li>
+      <li><strong>Photo</strong> : Prenez une photo de l'ordonnance papier originale (archivage 10 ans).</li>
+      <li>Cliquez <strong>« Enregistrer en attente »</strong> ou <strong>« Valider & Enregistrer »</strong>.</li>
+    </ol>
+
+    <h3>Contrôle des interactions</h3>
+    <p>OrdiveX vérifie automatiquement <strong>30+ interactions médicamenteuses critiques</strong> entre les médicaments de l'ordonnance :</p>
+    <ul>
+      <li>🚨 <strong>Interactions graves</strong> (bandeau rouge) : Ex. Warfarine + Aspirine → Hémorragie</li>
+      <li>⚠️ <strong>Interactions modérées</strong> (bandeau orange) : Ex. Fer + Ciprofloxacine → Absorption réduite</li>
+      <li>La note du pharmacien est pré-remplie automatiquement avec les interactions détectées</li>
+    </ul>
+
+    <h3>Dispenser une ordonnance</h3>
+    <ol class="steps">
+      <li>Trouvez l'ordonnance dans la liste et cliquez <strong>💊 Dispenser</strong></li>
+      <li>Si le patient a des allergies, une alerte de sécurité s'affiche</li>
+      <li>Vous êtes redirigé vers le POS avec les produits de l'ordonnance déjà dans le panier</li>
+      <li>Validez la vente normalement</li>
+    </ol>
+  </div>
+
+  <!-- ═══════ 10. PATIENTS ═══════ -->
+  <div class="section" id="patients">
+    <h2>10. 👤 Dossiers Patients</h2>
+    <h3>Créer un dossier patient</h3>
+    <ol class="steps">
+      <li>Cliquez <strong>« + Nouveau Patient »</strong></li>
+      <li>Renseignez : Nom, Téléphone, Date de naissance, Sexe, Adresse</li>
+      <li><strong>Allergies</strong> : Très important ! Listez toutes les allergies connues (ex: Pénicilline, Aspirine). Le POS alertera si un produit allergène est ajouté au panier.</li>
+      <li>Statut : Souscripteur principal ou Ayant Droit</li>
+    </ol>
+
+    <h3>Fiche patient</h3>
+    <p>Chaque fiche patient contient :</p>
+    <ul>
+      <li>Informations personnelles</li>
+      <li>Liste des allergies connues</li>
+      <li>Historique complet des achats</li>
+      <li>Ordonnances associées</li>
+      <li>Montant total des achats</li>
+    </ul>
+
+    <div class="important">
+      <strong>💡 Recherche prédictive</strong>
+      La liste des patients utilise l'autocomplete pour gérer efficacement les grandes bases (jusqu'à 20 000+ patients).
+    </div>
+  </div>
+
+  <!-- ═══════ 11. FOURNISSEURS ═══════ -->
+  <div class="section" id="fournisseurs">
+    <h2>11. 🚚 Fournisseurs & Achats</h2>
+
+    <h3>Ajouter un fournisseur</h3>
+    <ol class="steps">
+      <li>Cliquez <strong>« + Nouveau Fournisseur »</strong></li>
+      <li>Renseignez : Raison sociale, N° Agrément DNPM, Téléphone, Email, Adresse</li>
+      <li>Configurez le <strong>délai de paiement</strong> (30 jours par défaut)</li>
+    </ol>
+
+    <h3>Passer une commande</h3>
+    <ol class="steps">
+      <li>Sur la carte du fournisseur, cliquez <strong>« Commander »</strong></li>
+      <li>Sélectionnez les produits à commander avec les quantités</li>
+      <li>Indiquez la <strong>date de livraison prévue</strong></li>
+      <li>Cliquez <strong>« Enregistrer »</strong> — La commande passe en statut « Brouillon »</li>
+      <li>Cliquez <strong>« Envoyer »</strong> pour passer en statut « Envoyée »</li>
+    </ol>
+
+    <h3>Réceptionner une commande</h3>
+    <ol class="steps">
+      <li>Allez dans <strong>Bons de Commande</strong></li>
+      <li>Trouvez la commande et cliquez <strong>« Réceptionner »</strong></li>
+      <li>Pour chaque article : confirmez la quantité reçue, le <strong>N° de lot</strong> et la <strong>date d'expiration</strong></li>
+      <li>Validez — Le stock est automatiquement mis à jour</li>
+    </ol>
+
+    <h3>Score fournisseur</h3>
+    <p>Chaque fournisseur reçoit un <strong>score de fiabilité</strong> (sur 100) calculé automatiquement :</p>
+    <ul>
+      <li>40% — Taux de livraison à temps</li>
+      <li>40% — Taux de complétion des commandes</li>
+      <li>20% — Volume des commandes (bonus fidélité)</li>
+    </ul>
+  </div>
+
+  <!-- ═══════ 12. CAISSE ═══════ -->
+  <div class="section" id="caisse">
+    <h2>12. 💰 Caisse Journalière</h2>
+    <p>La Caisse affiche en temps réel les encaissements de la journée :</p>
+    <ul>
+      <li>💵 <strong>Total Espèces</strong></li>
+      <li>📱 <strong>Total Mobile Money</strong> (Orange Money + MTN MoMo)</li>
+      <li>🏦 <strong>Total Assurance</strong> (couverture entreprise)</li>
+      <li>📝 <strong>Total Crédit</strong> (dettes en cours)</li>
+      <li>📊 <strong>Nombre de transactions</strong> du jour</li>
+    </ul>
+    <p>Chaque vente du jour est listée avec : heure, montant, mode de paiement, et articles vendus.</p>
+  </div>
+
+  <!-- ═══════ 13. VENTES & RETOURS ═══════ -->
+  <div class="section" id="ventes">
+    <h2>13. 📜 Historique des Ventes & Retours</h2>
+
+    <h3>Historique des Ventes</h3>
+    <p>Toutes les ventes effectuées sont archivées avec :</p>
+    <ul>
+      <li>Numéro de vente unique</li>
+      <li>Date et heure</li>
+      <li>Patient associé</li>
+      <li>Montant total et mode de paiement</li>
+      <li>Détail des articles vendus</li>
+    </ul>
+
+    <h3>Encaisser une dette</h3>
+    <ol class="steps">
+      <li>Trouvez la vente à crédit (statut « Crédit ») dans l'historique</li>
+      <li>Cliquez <strong>« Encaisser la dette »</strong></li>
+      <li>Entrez le montant reçu et le mode de règlement</li>
+      <li>Le statut passe à « Payé »</li>
+    </ol>
+
+    <h3>Gérer un retour</h3>
+    <ol class="steps">
+      <li>Trouvez la vente concernée et cliquez <strong>« Retour »</strong></li>
+      <li>Sélectionnez les articles à retourner (tout ou partie)</li>
+      <li>Choisissez le motif : Erreur de dispensation, Péremption, Contre-indication, Autre</li>
+      <li>Choisissez le mode de remboursement : Espèces, Mobile Money, Avoir</li>
+      <li>Validez — Le stock est automatiquement réajusté à la hausse</li>
+    </ol>
+  </div>
+
+  <!-- ═══════ 14. METRICS ═══════ -->
+  <div class="section" id="metrics">
+    <h2>14. 📈 Business Intelligence (Métriques)</h2>
+    <p>La page <strong>Métriques Business</strong> est votre cockpit de pilotage financier :</p>
+
+    <h3>Section « Hero Financier »</h3>
+    <ul>
+      <li><strong>CA Total</strong> — Chiffre d'affaires sur la période sélectionnée</li>
+      <li><strong>Marge Nette</strong> — Bénéfice après coûts d'achat</li>
+      <li><strong>Panier Moyen</strong> — Montant moyen par transaction</li>
+      <li><strong>% Marge</strong> — Taux de marge global</li>
+    </ul>
+
+    <h3>Filtres temporels</h3>
+    <p>En haut à droite, utilisez les <strong>sélecteurs de date</strong> pour filtrer les données par période. Cliquez <strong>« Export CSV »</strong> pour télécharger les données.</p>
+
+    <h3>Graphiques avancés</h3>
+    <ul>
+      <li><strong>Tendance des Ventes</strong> — Courbe CA jour par jour</li>
+      <li><strong>Répartition Financière</strong> — Donut des modes de paiement</li>
+      <li><strong>Top 10 Produits</strong> — Classement par CA avec barres de progression</li>
+      <li><strong>Jours actifs</strong> — Nombre de jours avec au moins 1 vente sur 30</li>
+    </ul>
+  </div>
+
+  <!-- ═══════ 15. ALERTES ═══════ -->
+  <div class="section" id="alertes">
+    <h2>15. 🔔 Centre d'Alertes</h2>
+    <p>OrdiveX génère automatiquement des alertes en temps réel :</p>
+    <table>
+      <tr><th>Type</th><th>Icône</th><th>Description</th></tr>
+      <tr><td>Rupture de stock</td><td>🔴</td><td>Produit avec 0 unité en stock</td></tr>
+      <tr><td>Stock bas</td><td>🟡</td><td>Produit sous le seuil configuré</td></tr>
+      <tr><td>Expiration proche</td><td>⏰</td><td>Lot expirant dans les 90 jours</td></tr>
+      <tr><td>Expiration critique</td><td>🚨</td><td>Lot expirant dans les 30 jours</td></tr>
+    </table>
+    <p>Le <strong>badge rouge</strong> dans la barre de menu indique le nombre d'alertes non lues. Cliquez sur une alerte pour la marquer comme lue.</p>
+  </div>
+
+  <!-- ═══════ 16. TRAÇABILITÉ ═══════ -->
+  <div class="section" id="tracabilite">
+    <h2>16. 🛡️ Traçabilité & Pharmacovigilance</h2>
+    <p>Le module Traçabilité permet de retracer l'intégralité du parcours d'un médicament :</p>
+    <ul>
+      <li><strong>Origine</strong> : Fournisseur, bon de commande d'origine</li>
+      <li><strong>Lots</strong> : Numéros de lot, dates de fabrication et d'expiration</li>
+      <li><strong>Mouvements</strong> : Chaque entrée et sortie du produit</li>
+      <li><strong>Dispensation</strong> : À quels patients le médicament a été vendu</li>
+      <li><strong>Ordonnances</strong> : Quelles prescriptions sont liées</li>
+    </ul>
+    <div class="important">
+      <strong>💡 Conformité DNPM</strong>
+      Ce module vous permet de répondre aux exigences de traçabilité de la Direction Nationale de la Pharmacie et du Médicament de Guinée.
+    </div>
+  </div>
+
+  <!-- ═══════ 17. IMPRESSION ═══════ -->
+  <div class="section" id="impression">
+    <h2>17. 🖨️ Centre d'Impression</h2>
+    <p>Le Centre d'Impression permet de générer et imprimer :</p>
+    <ul>
+      <li><strong>Reçus de vente</strong> — Format 58mm ou 80mm pour imprimantes thermiques</li>
+      <li><strong>Factures</strong> — Format A4 détaillé avec TVA</li>
+      <li><strong>Bons de commande</strong> — Pour les fournisseurs</li>
+      <li><strong>Rapports de stock</strong> — Inventaire complet</li>
+      <li><strong>Étiquettes d'ordonnance</strong></li>
+    </ul>
+    <div class="tip">
+      <strong>✅ Astuce Impression Mobile</strong>
+      Sur mobile, utilisez une imprimante thermique Bluetooth (Xprinter recommandée). Appairez-la dans les paramètres Bluetooth de votre téléphone avant d'imprimer depuis OrdiveX.
+    </div>
+  </div>
+
+  <!-- ═══════ 18. PARAMÈTRES ═══════ -->
+  <div class="section" id="parametres">
+    <h2>18. ⚙️ Paramètres & Administration</h2>
+    <p>Accessible uniquement aux <strong>Administrateurs</strong>.</p>
+
+    <h3>Informations de la pharmacie</h3>
+    <ul>
+      <li>Nom de la pharmacie, adresse, téléphone, email</li>
+      <li>Slogan affiché dans la sidebar et les reçus</li>
+      <li>Logo personnalisé (visible partout)</li>
+      <li>N° Licence DNPM, nom du pharmacien responsable</li>
+      <li>Seuil d'alerte stock et délai d'alerte expiration (jours)</li>
+    </ul>
+
+    <h3>Configuration SMS</h3>
+    <p>Pour envoyer des SMS aux patients (rappels de dette, commande prête, etc.) :</p>
+    <ol class="steps">
+      <li>Activez le switch « Activer les SMS »</li>
+      <li>Choisissez le fournisseur API : <strong>AfricasTalking</strong> (recommandé), Twilio, ou Orange SMS API</li>
+      <li>Entrez votre <strong>clé API</strong> et <strong>nom d'utilisateur</strong></li>
+      <li>Configurez le <strong>Sender ID</strong> (nom de l'expéditeur, max 11 caractères)</li>
+      <li>Cliquez <strong>« Tester l'envoi »</strong> pour vérifier la configuration</li>
+    </ol>
+
+    <h3>Gestion des utilisateurs</h3>
+    <ol class="steps">
+      <li>Cliquez <strong>« + Ajouter »</strong> dans la section Utilisateurs</li>
+      <li>Renseignez : Nom, Identifiant, Mot de passe, Rôle (Admin/Pharmacien/Caissier), Email</li>
+      <li>Pour modifier un utilisateur existant, cliquez <strong>« Modifier »</strong></li>
+      <li>Vous pouvez <strong>désactiver</strong> un compte sans le supprimer</li>
+    </ol>
+
+    <h3>Journal d'Audit</h3>
+    <p>Les 20 dernières actions sont affichées avec : date/heure, utilisateur, action, entité et détails. C'est votre <strong>traçabilité des accès</strong>.</p>
+  </div>
+
+  <!-- ═══════ 19. NAOMIE ═══════ -->
+  <div class="section" id="naomie">
+    <h2>19. 🤖 Naomie — L'Assistante IA</h2>
+    <p><strong>Naomie</strong> est votre assistante virtuelle intégrée directement dans OrdiveX. Elle est disponible 24h/24 via le <strong>bouton bleu rond 💬</strong> en bas à droite de l'écran.</p>
+
+    <h3>Comment ouvrir Naomie</h3>
+    <p>Cliquez sur le <strong>bouton bleu pulsant</strong> (💬) en bas à droite. La fenêtre de chat s'ouvre avec un message de bienvenue personnalisé.</p>
+
+    <h3>Ce que Naomie peut faire</h3>
+    <table>
+      <tr><th>Catégorie</th><th>Exemples de questions</th></tr>
+      <tr><td>Ventes & POS</td><td>« Comment faire un crédit ? », « Comment utiliser l'assurance ? »</td></tr>
+      <tr><td>Stocks</td><td>« Comment consulter le stock ? », « Comment faire un inventaire ? »</td></tr>
+      <tr><td>Ordonnances</td><td>« Comment créer une ordonnance ? », « Comment lier une ordonnance ? »</td></tr>
+      <tr><td>Fournisseurs</td><td>« Comment passer une commande ? », « Comment réceptionner ? »</td></tr>
+      <tr><td>Patients</td><td>« Comment gérer les allergies ? », « Comment créer un patient ? »</td></tr>
+      <tr><td>Produits</td><td>« Comment ajouter un médicament ? », « Comment déconditionner ? »</td></tr>
+      <tr><td>Retours</td><td>« Comment faire un retour ? », « Comment rembourser ? »</td></tr>
+      <tr><td>Statistiques</td><td>« Quelles sont mes statistiques ? », « Combien de produits ? »</td></tr>
+      <tr><td>Synchronisation</td><td>« Comment synchroniser ? », « Comment faire un backup ? »</td></tr>
+      <tr><td>SMS</td><td>« Comment envoyer un SMS ? », « Comment configurer AfricasTalking ? »</td></tr>
+      <tr><td>Paramètres</td><td>« Comment configurer la pharmacie ? », « Comment ajouter un utilisateur ? »</td></tr>
+      <tr><td>Navigation</td><td>« Où suis-je ? », « Comment naviguer dans le menu ? »</td></tr>
+      <tr><td>Raccourcis</td><td>« Quels sont les raccourcis clavier ? »</td></tr>
+      <tr><td>Version</td><td>« Quelle version ? », « Quelles nouveautés ? »</td></tr>
+      <tr><td>Interactions</td><td>« Comment fonctionnent les interactions médicamenteuses ? »</td></tr>
+      <tr><td>Impression</td><td>« Comment connecter mon imprimante ? »</td></tr>
+      <tr><td>Problèmes</td><td>« Ça marche pas ! », « C'est lent ! », « J'ai un bug ! »</td></tr>
+    </table>
+
+    <h3>💬 Phrases-clés pour communiquer avec Naomie</h3>
+    <p>Naomie reconnaît les mots-clés suivants. Utilisez-les pour obtenir des réponses précises :</p>
+
+    <h4>Salutations & conversation</h4>
+    <div class="chat-example">
+      <div class="chat-ex-user">Bonjour Naomie !</div>
+      <div class="chat-ex-bot">Bonjour Pharmacien ! 😊 Comment puis-je vous aider aujourd'hui ?</div>
+    </div>
+    <p><strong>Mots-clés :</strong> bonjour, salut, hello, coucou, ça va, comment vas-tu, merci, au revoir, bye</p>
+
+    <h4>Demander de l'aide</h4>
+    <div class="chat-example">
+      <div class="chat-ex-user">J'ai besoin d'aide pour le stock</div>
+      <div class="chat-ex-bot">Voici comment consulter et gérer le stock... [réponse détaillée avec étapes]</div>
+    </div>
+    <p><strong>Mots-clés :</strong> aide, help, comment faire, je ne sais pas, je comprends pas</p>
+
+    <h4>Demander des chiffres</h4>
+    <div class="chat-example">
+      <div class="chat-ex-user">Combien de produits j'ai ?</div>
+      <div class="chat-ex-bot">📊 50 234 produits dans le catalogue, 15 439 patients enregistrés, 156 200 unités en stock</div>
+    </div>
+    <p><strong>Mots-clés :</strong> combien de produit, nombre de patient, combien j'ai</p>
+
+    <h4>Savoir où on est</h4>
+    <div class="chat-example">
+      <div class="chat-ex-user">Je suis où ?</div>
+      <div class="chat-ex-bot">📍 Vous êtes actuellement sur la page Point de Vente (POS) !</div>
+    </div>
+    <p><strong>Mots-clés :</strong> où suis-je, quelle page, où je suis, c'est quoi cette page</p>
+
+    <h4>Demander des astuces</h4>
+    <div class="chat-example">
+      <div class="chat-ex-user">Tu as des conseils ?</div>
+      <div class="chat-ex-bot">🎯 1. Scannez les codes-barres au POS — 3x plus rapide 2. Configurez les alertes stock 3. Utilisez les statistiques...</div>
+    </div>
+    <p><strong>Mots-clés :</strong> conseil, astuce, tips, recommandation, améliorer</p>
+
+    <h4>Signaler un problème</h4>
+    <div class="chat-example">
+      <div class="chat-ex-user">L'app ne marche pas bien</div>
+      <div class="chat-ex-bot">😟 Essayons de résoudre ça ! Étape 1 : Rafraîchissez (Ctrl+Shift+R)... 🛠️</div>
+    </div>
+    <p><strong>Mots-clés :</strong> problème, bug, erreur, marche pas, plante, crash, lent</p>
+
+    <h4>Humour & motivation</h4>
+    <div class="chat-example">
+      <div class="chat-ex-user">Raconte-moi une blague !</div>
+      <div class="chat-ex-bot">😄 Pourquoi le pharmacien est-il toujours calme ? Parce qu'il a toujours la bonne dose de patience ! 💊</div>
+    </div>
+    <p><strong>Mots-clés :</strong> blague, humour, drôle, je m'ennuie, motivation, courage, fatigue</p>
+
+    <h3>Boutons d'accès rapide</h3>
+    <p>Sous chaque réponse, Naomie affiche des <strong>boutons cliquables</strong> pour les sujets les plus fréquents : Naviguer dans le menu, Crédits & Dettes, Commander des produits, Gérer le stock, Retours, Statistiques, Assurance, Synchronisation.</p>
+
+    <div class="tip">
+      <strong>✅ Astuce Naomie</strong>
+      Si Naomie ne comprend pas votre question, elle vous donnera des indices basés sur la <strong>page où vous êtes actuellement</strong>. Reformulez avec un mot-clé plus spécifique (ex: « stock », « crédit », « commande »).
+    </div>
+  </div>
+
+  <!-- ═══════ 20. CLOUD ═══════ -->
+  <div class="section" id="cloud">
+    <h2>20. ☁️ Synchronisation Cloud Multi-Appareils</h2>
+
+    <h3>Comment ça fonctionne</h3>
+    <p>OrdiveX fonctionne en <strong>offline-first</strong> : toutes vos données sont stockées localement. Le cloud (Supabase) sert uniquement à <strong>synchroniser</strong> entre plusieurs appareils.</p>
+
+    <h3>Configuration initiale</h3>
+    <ol class="steps">
+      <li>Allez dans <strong>Paramètres → Appareil & Cloud</strong></li>
+      <li>Entrez l'URL Supabase et la Clé Supabase (fournis par TrillionX)</li>
+      <li>Cliquez <strong>« Enregistrer la config Cloud »</strong></li>
+      <li>Donnez un <strong>nom à cet appareil</strong> (ex: « PC Bureau », « Mobile Vente »)</li>
+    </ol>
+
+    <h3>PUSH — Envoyer vers le Cloud</h3>
+    <p>Les données se <strong>poussent automatiquement</strong> vers le cloud à chaque modification. Vous pouvez aussi forcer un envoi via <strong>Paramètres → « Envoi forcé vers le Cloud (PUSH) »</strong>.</p>
+
+    <h3>PULL — Récupérer du Cloud</h3>
+    <p>Pour récupérer les données d'un autre appareil, cliquez <strong>« Récupérer les données du Cloud (PULL) »</strong> dans les Paramètres.</p>
+
+    <div class="warning">
+      <strong>⚠️ Important</strong>
+      Si vous travaillez hors-ligne depuis longtemps, pensez à faire un <strong>PULL</strong> dès que vous retrouvez la connexion pour récupérer les modifications des autres appareils.
+    </div>
+
+    <h3>Moniteur de Réseau</h3>
+    <p>Cliquez l'icône 📡 dans la barre supérieure pour voir tous les appareils connectés à votre pharmacie, leur statut (en ligne/hors ligne) et la dernière synchronisation.</p>
+  </div>
+
+  <!-- ═══════ 21. MOBILE ═══════ -->
+  <div class="section" id="mobile">
+    <h2>21. 📱 Utilisation sur Mobile</h2>
+    <p>OrdiveX est optimisé pour une utilisation sur smartphone et tablette :</p>
+    <ul>
+      <li>Tous les tableaux s'adaptent automatiquement en mode responsive</li>
+      <li>Le menu latéral se transforme en menu glissant (swipe)</li>
+      <li>Les boutons sont dimensionnés pour le toucher (44px minimum)</li>
+      <li>Le POS mobile dispose d'une <strong>barre d'onglets</strong> en bas (Produits / Panier / Menu)</li>
+      <li>Les champs de formulaire sont optimisés pour éviter le <strong>zoom automatique iOS</strong></li>
+    </ul>
+    <div class="tip">
+      <strong>✅ Astuce Mobile</strong>
+      Installez OrdiveX en PWA pour une expérience native sans les barres du navigateur. Les performances sont identiques à une app native.
+    </div>
+  </div>
+
+  <!-- ═══════ 22. RACCOURCIS ═══════ -->
+  <div class="section" id="raccourcis">
+    <h2>22. ⌨️ Raccourcis Clavier</h2>
+    <h3>Navigation globale</h3>
+    <table>
+      <tr><th>Raccourci</th><th>Action</th></tr>
+      <tr><td><kbd>Ctrl</kbd> + <kbd>1</kbd></td><td>Aller au Tableau de Bord</td></tr>
+      <tr><td><kbd>Ctrl</kbd> + <kbd>2</kbd></td><td>Aller au Point de Vente</td></tr>
+      <tr><td><kbd>Ctrl</kbd> + <kbd>3</kbd></td><td>Aller aux Stocks</td></tr>
+      <tr><td><kbd>Ctrl</kbd> + <kbd>4</kbd></td><td>Aller aux Ordonnances</td></tr>
+      <tr><td><kbd>Ctrl</kbd> + <kbd>5</kbd></td><td>Aller à la Caisse</td></tr>
+      <tr><td><kbd>Ctrl</kbd> + <kbd>P</kbd></td><td>Centre d'Impression</td></tr>
+      <tr><td><kbd>Ctrl</kbd> + <kbd>B</kbd></td><td>Sauvegarde rapide</td></tr>
+      <tr><td><kbd>Échap</kbd></td><td>Fermer la fenêtre modale</td></tr>
+    </table>
+
+    <h3>Raccourcis POS</h3>
+    <table>
+      <tr><th>Raccourci</th><th>Action</th></tr>
+      <tr><td><kbd>F2</kbd></td><td>Focus sur la barre de recherche</td></tr>
+      <tr><td><kbd>F4</kbd></td><td>Valider la vente</td></tr>
+      <tr><td><kbd>F8</kbd></td><td>Vider le panier</td></tr>
+      <tr><td><kbd>F9</kbd></td><td>Scanner un code-barres</td></tr>
+    </table>
+  </div>
+
+  <!-- ═══════ 23. DÉPANNAGE ═══════ -->
+  <div class="section" id="depannage">
+    <h2>23. 🛠️ Dépannage & FAQ</h2>
+
+    <h3>L'application est lente</h3>
+    <ul>
+      <li>Fermez les onglets/apps inutiles</li>
+      <li>Rafraîchissez avec <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>R</kbd></li>
+      <li>Si vous avez 50 000+ produits, la recherche utilise l'autocomplete pour rester fluide</li>
+    </ul>
+
+    <h3>Les données ne se synchronisent pas</h3>
+    <ol class="steps">
+      <li>Vérifiez votre connexion internet</li>
+      <li>Allez dans <strong>Paramètres → Synchronisation</strong></li>
+      <li>Cliquez <strong>« Réparer l'envoi Cloud »</strong> — Cela force un renvoi complet</li>
+      <li>Puis faites un <strong>PULL</strong> pour récupérer les données manquantes</li>
+    </ol>
+
+    <h3>J'ai perdu des données</h3>
+    <ol class="steps">
+      <li>OrdiveX fait des <strong>sauvegardes automatiques</strong> toutes les 30 minutes</li>
+      <li>Allez dans <strong>Paramètres → Restaurer une sauvegarde</strong></li>
+      <li>Sélectionnez le fichier JSON de sauvegarde</li>
+      <li>OrdiveX téléchargera d'abord un <strong>fichier de secours</strong> de vos données actuelles avant de restaurer</li>
+    </ol>
+
+    <h3>Le POS ne décompte pas le stock</h3>
+    <ul>
+      <li>Vérifiez que le produit a bien des <strong>lots avec du stock</strong> (Gestion des Stocks → cliquez sur le produit)</li>
+      <li>Si le stock est à 0, le produit est en rupture et OrdiveX vous l'indique</li>
+    </ul>
+
+    <h3>L'imprimante ne fonctionne pas</h3>
+    <ul>
+      <li>Vérifiez le <strong>Bluetooth</strong> de votre appareil</li>
+      <li>Assurez-vous que l'imprimante est <strong>allumée et appairée</strong></li>
+      <li>Essayez d'imprimer un test depuis les paramètres Bluetooth de votre téléphone</li>
+    </ul>
+
+    <h3>Contacter le support TrillionX</h3>
+    <p>Si le problème persiste, contactez l'équipe de support :</p>
+    <ul>
+      <li>💬 <strong>Naomie</strong> — via le bouton bleu dans l'app</li>
+      <li>📱 <strong>WhatsApp</strong> — Lien accessible depuis Naomie → « Contacter le support humain »</li>
+    </ul>
+  </div>
+
+  <!-- FOOTER -->
+  <div style="text-align:center; padding: 40px 0 20px; color: var(--muted); font-size: 13px;">
+    <p><strong>OrdiveX</strong> — ERP Pharmaceutique Premium</p>
+    <p>Conçu et développé par <strong>TrillionX</strong> 🚀</p>
+    <p style="margin-top:8px">© 2026 — Tous droits réservés</p>
+  </div>
+
+</div>
+
+</body>
+</html>
