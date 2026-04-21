@@ -1032,7 +1032,14 @@ async function autoBackupToStorage() {
 
     // Stocker dans localStorage (backup silencieux)
     const key = `pharma_auto_backup_${new Date().toISOString().split('T')[0]}`;
-    localStorage.setItem(key, JSON.stringify(backup));
+    const json = JSON.stringify(backup);
+    // Vérifier que la taille ne dépasse pas 4 MB (limite localStorage ~5-10 MB)
+    if (json.length > 4 * 1024 * 1024) {
+      console.log('[Backup] ⚠️ Base trop volumineuse pour localStorage (' + (json.length / 1024 / 1024).toFixed(1) + ' MB), backup silencieux ignoré. Utilisez le backup manuel.');
+      localStorage.setItem('pharma_last_backup', new Date().toISOString());
+      return backup;
+    }
+    localStorage.setItem(key, json);
     localStorage.setItem('pharma_last_backup', new Date().toISOString());
 
     // Nettoyer les vieux backups (garder seulement les 7 derniers jours)

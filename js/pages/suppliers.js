@@ -483,10 +483,12 @@ async function showNewOrder(supplierId, supplierName, preselectedProductId) {
       if (sel) {
         sel.value = String(pid);
         // Déclencher la mise à jour du prix et du total
-        const opt = sel.options[sel.selectedIndex];
-        if (opt && opt.dataset.price) {
-          const priceInput = document.getElementById('order-price-0');
-          if (priceInput) priceInput.value = opt.dataset.price;
+        if (sel.selectedIndex >= 0) {
+          const opt = sel.options[sel.selectedIndex];
+          if (opt && opt.dataset && opt.dataset.price) {
+            const priceInput = document.getElementById('order-price-0');
+            if (priceInput) priceInput.value = opt.dataset.price;
+          }
         }
         updateOrderTotal();
       }

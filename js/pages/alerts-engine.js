@@ -73,9 +73,9 @@ const AlertsEngine = {
       const min = product.minStock || 10;
 
       if (qty === 0) {
-        if (!ruptureSet.has(product.id) && !ruptureSet.has('global_rupture')) newRuptures.push(product);
+        if (!ruptureSet.has(product.id) && !ruptureSet.has(-1)) newRuptures.push(product);
       } else if (qty <= min) {
-        if (!lowStockSet.has(product.id) && !lowStockSet.has('global_lowstock')) newLowStocks.push({product, qty, min});
+        if (!lowStockSet.has(product.id) && !lowStockSet.has(-2)) newLowStocks.push({product, qty, min});
       }
     }
 
@@ -83,7 +83,7 @@ const AlertsEngine = {
     if (newRuptures.length > 50) {
       await DB.dbAdd('alerts', {
         type: 'RUPTURE',
-        productId: 'global_rupture',
+        productId: -1,
         productName: 'Alerte Globale',
         message: `Rupture massive: ${newRuptures.length} produits sont en rupture.`,
         status: 'unread',
@@ -107,7 +107,7 @@ const AlertsEngine = {
     if (newLowStocks.length > 50) {
       await DB.dbAdd('alerts', {
         type: 'LOW_STOCK',
-        productId: 'global_lowstock',
+        productId: -2,
         productName: 'Alerte Globale',
         message: `Stock bas massif: ${newLowStocks.length} produits sont presque épuisés.`,
         status: 'unread',
