@@ -428,9 +428,11 @@ function _dbPutRaw(storeName, data) {
 // Generic CRUD operations
 // ── Cache mémoire pour accélérer dbGetAll sur les gros stores ──
 const _dbCache = new Map();
-function _invalidateCache(storeName) { _dbCache.delete(storeName); }
+const _dbCacheTime = new Map(); // Timestamp du dernier cache
+function _invalidateCache(storeName) { _dbCache.delete(storeName); _dbCacheTime.delete(storeName); }
 const _isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
-const _cacheMaxItems = _isMobile ? 50000 : 500000; // Mobile: 50k, PC: 500k
+const _cacheMaxItems = _isMobile ? 150000 : 500000; // Mobile: 150k (couvre 100k produits), PC: 500k
+const _cacheTTL = _isMobile ? 300000 : 600000; // Mobile: 5 min, PC: 10 min — auto-expire
 
 async function dbAdd(storeName, data) {
   _invalidateCache(storeName);
@@ -478,9 +480,14 @@ async function dbGet(storeName, id) {
 
 async function dbGetAll(storeName, indexName, query) {
   if (!db) { console.warn('[DB] Base non initialisée, tentative de reconnexion...'); await initDB(); }
-  // Cache mémoire : retourner immédiatement si dispo (seulement pour les requêtes sans filtre)
+  // Cache mémoire : retourner immédiatement si dispo et pas expiré
   if (!indexName && query === undefined && _dbCache.has(storeName)) {
-    return _dbCache.get(storeName);
+    const cacheAge = Date.now() - (_dbCacheTime.get(storeName) || 0);
+    if (cacheAge < _cacheTTL) {
+      return _dbCache.get(storeName);
+    }
+    _dbCache.delete(storeName); // Expiré, libérer la RAM
+    _dbCacheTime.delete(storeName);
   }
   return new Promise((resolve, reject) => {
     try {
@@ -498,6 +505,7 @@ async function dbGetAll(storeName, indexName, query) {
         // Cache adaptatif : 50k max sur mobile, 500k max sur PC
         if (!indexName && query === undefined && result.length < _cacheMaxItems) {
           _dbCache.set(storeName, result);
+          _dbCacheTime.set(storeName, Date.now());
         }
         resolve(result);
       };
