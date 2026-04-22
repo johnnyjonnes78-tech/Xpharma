@@ -972,8 +972,15 @@ async function pullFromSupabase(isManual = false) {
           // Log silencieux en production
         }
       } catch (storeErr) {
-        if (storeErr && !storeErr?.message?.includes('Failed to fetch')) {
-          console.warn(`[Flash] Store error ${storeName}:`, storeErr?.message || storeErr);
+        const errMsg = storeErr?.message || String(storeErr || '');
+        const isNetworkError = errMsg.includes('Failed to fetch') || errMsg.includes('NetworkError') || errMsg.includes('ERR_INTERNET_DISCONNECTED') || errMsg.includes('ERR_QUIC_PROTOCOL_ERROR') || errMsg.includes('ERR_NAME_NOT_RESOLVED');
+        if (isNetworkError) {
+          AppState.isOnline = false;
+          console.log('[Flash] ⚠️ Pull interrompu: erreur réseau détectée');
+          break; // Stop le pull immédiatement
+        }
+        if (errMsg && !errMsg.includes('null')) {
+          console.warn(`[Flash] Store error ${storeName}:`, errMsg);
         }
       }
     }
