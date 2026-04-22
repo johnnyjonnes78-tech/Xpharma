@@ -124,7 +124,7 @@ async function renderDashboard(container) {
         <div class="kpi-card kpi-orange ${lowStockProducts.length > 0 ? 'kpi-alert' : ''}">
           <div class="kpi-icon"><i data-lucide="package"></i></div>
           <div class="kpi-content">
-            <div class="kpi-value">${products.length}</div>
+            <div class="kpi-value">${productCount}</div>
             <div class="kpi-label">Produits Actifs</div>
             <div class="kpi-sub">${lowStockProducts.length} en stock bas</div>
           </div>

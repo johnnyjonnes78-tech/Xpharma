@@ -124,8 +124,8 @@ async function renderMetrics(container) {
       const minSeuil = p.minStock || 10;
       return qty > 0 && qty <= minSeuil;
     }).length;
-    const healthyStock = Math.max(0, products.length - outOfStock - lowStock);
-    const stockHealthPct = products.length > 0 ? Math.round((healthyStock / products.length) * 100) : 100;
+    const healthyStock = Math.max(0, productCount - outOfStock - lowStock);
+    const stockHealthPct = productCount > 0 ? Math.round((healthyStock / productCount) * 100) : 100;
 
     // ── Valeur du stock ──
     const totalStockValue = products.reduce((a, p) => {
@@ -255,7 +255,7 @@ async function renderMetrics(container) {
             <div style="width:40px;height:40px;background:rgba(27,111,174,0.12);border-radius:12px;display:flex;align-items:center;justify-content:center;"><i data-lucide="bar-chart-2" style="color:var(--primary-color);width:22px;height:22px;"></i></div>
             Business Intelligence
           </h1>
-          <p style="font-size:13px; color:var(--text-muted); margin:4px 0 0 50px;">Analyse financière complète · ${products.length} produits · ${totalTransactions} transactions</p>
+          <p style="font-size:13px; color:var(--text-muted); margin:4px 0 0 50px;">Analyse financière complète · ${productCount} produits · ${totalTransactions} transactions</p>
         </div>
         <div class="bi-header-actions" style="display:flex; gap:8px; align-items:center;">
           <input type="date" id="metrics-start-date" class="form-control" style="width:130px; font-size:12px; height:32px" value="${window._metricsStartDate || ''}" onchange="updateMetricsFilter()">
@@ -506,7 +506,7 @@ async function renderMetrics(container) {
             <div style="margin-top:8px; padding:14px; background:var(--surface-2); border-radius:10px; border:1px solid var(--border);">
               <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
                 <span style="font-size:13px; font-weight:600;">Répartition stock</span>
-                <span style="font-size:13px; font-weight:600;">${products.length} réf.</span>
+                <span style="font-size:13px; font-weight:600;">${productCount} réf.</span>
               </div>
               <div style="display:flex; height:8px; border-radius:4px; overflow:hidden; gap:2px;">
                 <div style="flex:${healthyStock}; background:#27ae60; border-radius:4px;" title="${healthyStock} OK"></div>
