@@ -31,40 +31,19 @@ async function renderMetrics(container) {
   }
 
   try {
-    const t0 = performance.now();
-    
-    // Chargement séquentiel avec diagnostic — identifier quel store crash
-    const safeLoad = async (table, maxItems = 100000) => {
-      try {
-        const count = await DB.dbCount(table).catch(() => 0);
-        if (count > maxItems) {
-          console.warn(`[Metrics] ⚠️ ${table} trop gros (${count} items), ignoré`);
-          return [];
-        }
-        console.log(`[Metrics] Chargement ${table} (${count} items)...`);
-        const data = await DB.dbGetAll(table) || [];
-        return data;
-      } catch(e) {
-        console.warn('[Metrics] Erreur', table, e.message);
-        return [];
-      }
-    };
+    const safeLoad = async (table) => { try { return await DB.dbGetAll(table) || []; } catch(e) { return []; } };
     
     const productCount = await DB.dbCount('products').catch(() => 0);
-    console.log(`[Metrics] products: ${productCount} (mode ${productCount > 50000 ? 'léger' : 'complet'})`);
     
-    // Yield pour éviter freeze
-    await new Promise(r => setTimeout(r, 10));
-    
-    const allSales = await safeLoad('sales', 100000);
-    await new Promise(r => setTimeout(r, 10));
-    const allSaleItems = await safeLoad('saleItems', 100000);
-    await new Promise(r => setTimeout(r, 10));
-    const stockAll = await safeLoad('stock');
-    const recentAudit = await DB.dbGetRecent('auditLog', 'timestamp', 2000).catch(() => []);
-    const alerts = await safeLoad('alerts');
-    const allReturns = await safeLoad('returns');
-    const cashRegister = await safeLoad('cashRegister');
+    const [allSales, allSaleItems, stockAll, auditLog, alerts, allReturns, cashRegister] = await Promise.all([
+      safeLoad('sales'),
+      safeLoad('saleItems'),
+      safeLoad('stock'),
+      DB.dbGetRecent('auditLog', 'timestamp', 2000).catch(() => []),
+      safeLoad('alerts'),
+      safeLoad('returns'),
+      safeLoad('cashRegister'),
+    ]);
 
     // Filtrer aux 12 derniers mois
     const oneYearAgo = new Date();
@@ -74,10 +53,8 @@ async function renderMetrics(container) {
     const saleIds = new Set(sales.map(s => s.id));
     const saleItems = allSaleItems.filter(si => saleIds.has(si.saleId));
     const returns = allReturns.filter(r => !r.date || r.date >= cutoff);
-    const auditLog = recentAudit;
-    console.log(`[Metrics] ✅ ${sales.length} ventes, ${saleItems.length} items — ${Math.round(performance.now() - t0)}ms`);
 
-    await new Promise(r => setTimeout(r, 10));
+    await new Promise(r => setTimeout(r, 0));
 
     // Mode léger si catalogue > 50k : pseudo-produits depuis le stock
     let products;

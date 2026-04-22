@@ -428,7 +428,7 @@ async function renderReports(container) {
     <div class="page-header">
       <div>
         <h1 class="page-title">Rapports & Analytique</h1>
-        <p class="page-subtitle">Intelligence décisionnelle — données temps réel</p>
+        <p class="page-subtitle">Intelligence décisionnelle — ${productCount.toLocaleString()} produits · ${sales.length} ventes</p>
       </div>
       <div class="header-actions">
         <button class="btn btn-secondary" onclick="window.print()"><i data-lucide="printer"></i> Imprimer</button>
@@ -446,9 +446,9 @@ async function renderReports(container) {
       <div class="kpi-card kpi-green">
         <div class="kpi-icon"><i data-lucide="package"></i></div>
         <div class="kpi-content">
-          <div class="kpi-value">${UI.formatCurrency(stockValue)}</div>
-          <div class="kpi-label">Valeur stock (achat)</div>
-          <div class="kpi-sub">Vente: ${UI.formatCurrency(stockSaleValue)}</div>
+          <div class="kpi-value">${stockValue > 0 ? UI.formatCurrency(stockValue) : (productCount > 50000 ? productCount.toLocaleString() + ' réf.' : '0 FG')}</div>
+          <div class="kpi-label">${stockValue > 0 ? 'Valeur stock (achat)' : 'Produits en catalogue'}</div>
+          <div class="kpi-sub">${stockValue > 0 ? 'Vente: ' + UI.formatCurrency(stockSaleValue) : stockAll.length + ' entrées en stock'}</div>
         </div>
       </div>
       <div class="kpi-card kpi-orange">
