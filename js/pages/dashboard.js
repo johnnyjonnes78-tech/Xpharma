@@ -6,7 +6,6 @@ async function renderDashboard(container) {
   UI.loading(container, 'Chargement du tableau de bord...');
 
   try {
-    const _isMobileDevice = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
     const [stockAll, sales, saleItems, alerts, movements, allReturns] = await Promise.all([
       DB.dbGetAll('stock'),
       DB.dbGetAll('sales'),
@@ -16,9 +15,9 @@ async function renderDashboard(container) {
       DB.dbGetAll('returns'),
     ]);
 
-    // Charger products intelligemment : stock-only sur mobile si trop gros
+    // Charger products intelligemment : stock-only si catalogue > 50k pour éviter crash RAM
     let products;
-    if (_isMobileDevice && (await DB.dbCount('products')) > 50000) {
+    if ((await DB.dbCount('products')) > 50000) {
       products = stockAll.map(s => ({ id: s.productId, name: 'Produit', minStock: 10 }));
     } else {
       products = await DB.dbGetAll('products');

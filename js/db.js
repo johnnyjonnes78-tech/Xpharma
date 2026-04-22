@@ -922,8 +922,6 @@ async function pullFromSupabase(isManual = false) {
         break;
       }
       try {
-        let allData = [];
-        
         // 1. Obtenir le nombre total d'items
         const countRes = await sb.from(storeName === 'users' ? 'app_users' : storeName).select('*', { count: 'exact', head: true });
         const totalCount = countRes.count || 0;
@@ -931,10 +929,42 @@ async function pullFromSupabase(isManual = false) {
         if (totalCount > 0) {
           const fetchLimit = 1000;
           const tableName = storeName === 'users' ? 'app_users' : storeName;
+          let storeItemCount = 0;
 
-          // Fetch par lots de 5, créés paresseusement pour éviter les requêtes inutiles si hors-ligne
+          const mustBeString = [
+            'username', 'password', 'code', 'lotNumber', 'phone', 'dnpm',
+            'pharmacy_phone', 'pharmacy_dnpm', 'pharmacy_name', 'key', 'value'
+          ];
+
+          // Fonction d'écriture immédiate dans IndexedDB (pas d'accumulation en RAM)
+          const writeBatchToIDB = async (items) => {
+            const prepared = items.map(item => {
+              let localItem = { ...item, _synced: true, _updatedAt: item.updatedAt || Date.now() };
+              for (const key of Object.keys(localItem)) {
+                if (mustBeString.includes(key) || (storeName === 'settings' && key === 'value')) {
+                  if (localItem[key] !== undefined && localItem[key] !== null) {
+                    localItem[key] = String(localItem[key]);
+                  }
+                }
+              }
+              return localItem;
+            }).filter(item => !(storeName === 'settings' && item.status === 'DELETED'));
+
+            if (prepared.length === 0) return;
+            await new Promise((resolve, reject) => {
+              const tx = db.transaction(storeName, 'readwrite');
+              const txStore = tx.objectStore(storeName);
+              for (const item of prepared) { txStore.put(item); }
+              tx.oncomplete = () => resolve();
+              tx.onerror = () => reject(tx.error);
+              tx.onabort = () => reject(tx.error);
+            });
+            storeItemCount += prepared.length;
+          };
+
+          // Fetch par lots de 5 et écriture immédiate (RAM ~5MB max au lieu de ~200MB)
           for (let offset = 0; offset < totalCount; offset += fetchLimit * 5) {
-            if (!navigator.onLine) break; // Stop immédiat si connexion perdue
+            if (!navigator.onLine) break;
             const batch = [];
             for (let j = 0; j < 5 && (offset + j * fetchLimit) < totalCount; j++) {
               const o = offset + j * fetchLimit;
@@ -943,55 +973,20 @@ async function pullFromSupabase(isManual = false) {
             const results = await Promise.all(batch);
             for (const res of results) {
               if (res.error) throw res.error;
-              if (res.data) allData = allData.concat(res.data);
-            }
-          }
-        }
-
-        if (allData.length > 0) {
-          hasChanges = true;
-          // Log uniquement au premier pull ou si beaucoup de données
-
-          // Préparer tous les items
-          const mustBeString = [
-            'username', 'password', 'code', 'lotNumber', 'phone', 'dnpm',
-            'pharmacy_phone', 'pharmacy_dnpm', 'pharmacy_name', 'key', 'value'
-          ];
-
-          const preparedItems = allData.map(item => {
-            let localItem = { ...item, _synced: true, _updatedAt: item.updatedAt || Date.now() };
-            for (const key of Object.keys(localItem)) {
-              if (mustBeString.includes(key) || (storeName === 'settings' && key === 'value')) {
-                if (localItem[key] !== undefined && localItem[key] !== null) {
-                  localItem[key] = String(localItem[key]);
-                }
+              if (res.data && res.data.length > 0) {
+                await writeBatchToIDB(res.data);
+                // Libérer la RAM après écriture
               }
             }
-            return localItem;
-          }).filter(item => !(storeName === 'settings' && item.status === 'DELETED'));
-
-          // ── BATCH WRITE OPTIMISÉ : 2000 items par transaction IndexedDB ──
-          const BATCH_SIZE = 2000;
-          for (let i = 0; i < preparedItems.length; i += BATCH_SIZE) {
-            const batch = preparedItems.slice(i, i + BATCH_SIZE);
-            await new Promise((resolve, reject) => {
-              const tx = db.transaction(storeName, 'readwrite');
-              const store = tx.objectStore(storeName);
-              for (const item of batch) {
-                store.put(item);
-              }
-              tx.oncomplete = () => resolve();
-              tx.onerror = () => reject(tx.error);
-              tx.onabort = () => reject(tx.error);
-            });
-            // Pause très courte pour la libération du thread UI
-            if (i + BATCH_SIZE < preparedItems.length) {
-              await new Promise(r => setTimeout(r, 5));
-            }
+            // Pause courte pour libérer le thread UI
+            await new Promise(r => setTimeout(r, 5));
           }
-          totalItemsPulled += preparedItems.length;
-          _invalidateCache(storeName); // Invalider le cache mémoire après écriture
-          // Log silencieux en production
+
+          if (storeItemCount > 0) {
+            hasChanges = true;
+            totalItemsPulled += storeItemCount;
+            _invalidateCache(storeName);
+          }
         }
       } catch (storeErr) {
         const errMsg = storeErr?.message || String(storeErr || '');

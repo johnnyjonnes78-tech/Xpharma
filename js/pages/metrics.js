@@ -20,14 +20,12 @@ async function renderMetrics(container) {
       safeLoad('cashRegister'),
     ]);
 
-    // Sur mobile, ne pas charger les 330k products en RAM
-    // Utiliser le stock + un dbCount pour les métriques
-    const _isMobileDevice = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
+    // Ne pas charger 330k products en RAM si catalogue > 50k
     let products;
-    if (_isMobileDevice && (await DB.dbCount('products')) > 50000) {
-      // Mode mobile léger : créer des pseudo-produits depuis le stock uniquement
+    if ((await DB.dbCount('products')) > 50000) {
+      // Mode léger : pseudo-produits depuis le stock uniquement
       products = stockAll.map(s => ({ id: s.productId, minStock: 10, purchasePrice: 0, salePrice: 0 }));
-      console.log('[Metrics] Mode mobile léger: stock-only (' + products.length + ' refs)');
+      console.log('[Metrics] Mode léger: stock-only (' + products.length + ' refs)');
     } else {
       products = await safeLoad('products');
     }
