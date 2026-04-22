@@ -988,6 +988,7 @@ async function pullFromSupabase(isManual = false) {
             }
           }
           totalItemsPulled += preparedItems.length;
+          _invalidateCache(storeName); // Invalider le cache mémoire après écriture
           // Log silencieux en production
         }
       } catch (storeErr) {
