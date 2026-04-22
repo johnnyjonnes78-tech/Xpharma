@@ -83,7 +83,7 @@ let _realtimeTimeout = null;
 
 async function getSupabaseClient() {
   if (_supabaseInstance) {
-    if (AppState.isOnline) _setupRealtime(_supabaseInstance);
+    if (AppState.isOnline && navigator.onLine) _setupRealtime(_supabaseInstance);
     return _supabaseInstance;
   }
   try {
@@ -895,6 +895,11 @@ async function pullFromSupabase(isManual = false) {
 
     // Traitement séquentiel pour les grosses tables (products) afin d'éviter de surcharger la mémoire
     for (const storeName of storesToPull) {
+      // Arrêter immédiatement si la connexion est coupée
+      if (!navigator.onLine) {
+        console.log('[Flash] ⚠️ Pull interrompu: connexion perdue');
+        break;
+      }
       try {
         let allData = [];
         
