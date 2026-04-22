@@ -1,9 +1,9 @@
-﻿/**
+/**
  * OrdiveX — Service Worker
  * Cache-first PWA strategy pour fonctionnement 100% offline
  */
 
-const CACHE_NAME = 'pharma-cache-v7.1.0';
+const CACHE_NAME = 'pharma-cache-v7.2.0';
 const ASSETS = [
   './',
   './index.html',
