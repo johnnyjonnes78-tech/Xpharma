@@ -1320,10 +1320,23 @@ window.addEventListener('online', () => {
 window.addEventListener('offline', () => {
   AppState.isOnline = false;
   console.log('[App] 🔴 Connexion perdue — mode hors-ligne activé');
-  // Fermeture des sockets pour éviter les logs systèmes non-catchables du navigateur
-  if (_supabaseInstance && _realtimeSubscription) {
-    try { _supabaseInstance.removeChannel(_realtimeSubscription).catch(()=>{}); } catch(e) {}
-    _realtimeSubscription = null;
+  // Destruction complète du client Supabase pour stopper les retry internes (refresh_token, WebSocket)
+  if (_supabaseInstance) {
+    try {
+      // Stopper le rafraîchissement automatique du token
+      if (_supabaseInstance.auth?.stopAutoRefresh) {
+        _supabaseInstance.auth.stopAutoRefresh();
+      }
+      // Fermer les channels realtime
+      if (_realtimeSubscription) {
+        _supabaseInstance.removeChannel(_realtimeSubscription).catch(() => {});
+        _realtimeSubscription = null;
+      }
+      // Déconnecter le realtime complètement
+      _supabaseInstance.realtime?.disconnect();
+    } catch (e) {}
+    // Détruire l'instance — sera recréée au retour en ligne
+    _supabaseInstance = null;
   }
 });
 
