@@ -10,22 +10,24 @@ async function renderMetrics(container) {
     // Chargement défensif : chaque table est chargée individuellement
     // pour éviter un crash global si une table n'existe pas encore
     const safeLoad = async (table) => { try { return await DB.dbGetAll(table) || []; } catch(e) { console.warn('[Metrics] Table manquante:', table); return []; } };
-    const [sales, saleItems, stockAll, auditLog, alerts, returns, cashRegister] = await Promise.all([
+    
+    // Charger tout en parallèle : stores légers + comptage products (pas de chargement séquentiel)
+    const [sales, saleItems, stockAll, recentAudit, alerts, returns, cashRegister, productCount] = await Promise.all([
       safeLoad('sales'),
       safeLoad('saleItems'),
       safeLoad('stock'),
-      safeLoad('auditLog'),
+      DB.dbGetRecent('auditLog', 'timestamp', 5000).catch(() => []), // Derniers 5000 seulement
       safeLoad('alerts'),
       safeLoad('returns'),
       safeLoad('cashRegister'),
+      DB.dbCount('products').catch(() => 0),
     ]);
+    const auditLog = recentAudit;
 
-    // Ne pas charger 330k products en RAM si catalogue > 50k
+    // Mode léger si catalogue > 50k : pseudo-produits depuis le stock
     let products;
-    if ((await DB.dbCount('products')) > 50000) {
-      // Mode léger : pseudo-produits depuis le stock uniquement
+    if (productCount > 50000) {
       products = stockAll.map(s => ({ id: s.productId, minStock: 10, purchasePrice: 0, salePrice: 0 }));
-      console.log('[Metrics] Mode léger: stock-only (' + products.length + ' refs)');
     } else {
       products = await safeLoad('products');
     }

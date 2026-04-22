@@ -6,18 +6,19 @@ async function renderDashboard(container) {
   UI.loading(container, 'Chargement du tableau de bord...');
 
   try {
-    const [stockAll, sales, saleItems, alerts, movements, allReturns] = await Promise.all([
+    const [stockAll, sales, saleItems, alerts, movements, allReturns, productCount] = await Promise.all([
       DB.dbGetAll('stock'),
       DB.dbGetAll('sales'),
       DB.dbGetAll('saleItems'),
       DB.dbGetAll('alerts'),
       DB.dbGetAll('movements'),
       DB.dbGetAll('returns'),
+      DB.dbCount('products').catch(() => 0),
     ]);
 
     // Charger products intelligemment : stock-only si catalogue > 50k pour éviter crash RAM
     let products;
-    if ((await DB.dbCount('products')) > 50000) {
+    if (productCount > 50000) {
       products = stockAll.map(s => ({ id: s.productId, name: 'Produit', minStock: 10 }));
     } else {
       products = await DB.dbGetAll('products');
