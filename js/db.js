@@ -118,19 +118,62 @@ async function getSupabaseClient() {
 function _setupRealtime(sbClient) {
   if (_realtimeSubscription || !navigator.onLine) return;
 
+  // Mapping table Supabase → store IndexedDB
+  const _tableToStore = { app_users: 'users' };
+  const _validStores = new Set([
+    'users', 'settings', 'products', 'lots', 'stock', 'movements',
+    'suppliers', 'purchaseOrders', 'sales', 'saleItems', 'patients',
+    'prescriptions', 'alerts', 'cashRegister', 'auditLog', 'returns'
+  ]);
+
   _realtimeSubscription = sbClient.channel('flash-sync-channel')
-    .on('postgres_changes', { event: '*', schema: 'public' }, (payload) => {
-      clearTimeout(_realtimeTimeout);
-      _realtimeTimeout = setTimeout(() => {
-        console.log('[Flash] ⚡ Changement distant détecté, déclenchement pull', payload.table);
-        pullFromSupabase().catch(() => {});
-      }, 1500);
+    .on('postgres_changes', { event: '*', schema: 'public' }, async (payload) => {
+      const tableName = payload.table;
+      const storeName = _tableToStore[tableName] || tableName;
+      const eventType = payload.eventType; // INSERT, UPDATE, DELETE
+
+      // Ignorer les tables non gérées
+      if (!_validStores.has(storeName)) return;
+
+      try {
+        if (eventType === 'DELETE' && payload.old?.id) {
+          // ── SUPPRESSION : retirer l'item local ──
+          await dbDelete(storeName, payload.old.id);
+          console.log(`[RT] 🗑️ ${storeName}/${payload.old.id} supprimé`);
+
+        } else if ((eventType === 'INSERT' || eventType === 'UPDATE') && payload.new) {
+          // ── INSERTION/MISE À JOUR : écrire directement dans IndexedDB ──
+          const item = { ...payload.new, _synced: true, _updatedAt: Date.now() };
+
+          // Conversion des champs qui doivent être des strings
+          const mustBeString = ['username','password','code','lotNumber','phone','dnpm',
+            'pharmacy_phone','pharmacy_dnpm','pharmacy_name','key','value'];
+          for (const key of Object.keys(item)) {
+            if (mustBeString.includes(key) || (storeName === 'settings' && key === 'value')) {
+              if (item[key] !== undefined && item[key] !== null) {
+                item[key] = String(item[key]);
+              }
+            }
+          }
+
+          // Ignorer les settings marqués DELETED
+          if (storeName === 'settings' && item.status === 'DELETED') {
+            await dbDelete(storeName, item.id);
+          } else {
+            await _dbPutRaw(storeName, item);
+            _invalidateCache(storeName);
+          }
+          console.log(`[RT] ⚡ ${storeName}/${item.id} ${eventType === 'INSERT' ? 'ajouté' : 'mis à jour'}`);
+        }
+      } catch (err) {
+        // En cas d'erreur, on ne fait rien — le pull de 30 min rattrapera
+        console.warn(`[RT] Erreur sync instantanée ${storeName}:`, err.message);
+      }
     })
     .subscribe((status, err) => {
        if (status === 'SUBSCRIBED') {
-         console.log('[Flash] 📡 Connecté au temps réel Supabase');
+         console.log('[Flash] 📡 Connecté au temps réel Supabase (sync instantanée)');
        } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
-         // On ne force plus AppState.isOnline=false ici pour ne pas bloquer les Ventes
          try { sbClient.removeChannel(_realtimeSubscription).catch(()=>{}); } catch(e){}
          _realtimeSubscription = null;
        }
