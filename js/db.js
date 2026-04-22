@@ -909,20 +909,17 @@ async function pullFromSupabase(isManual = false) {
 
         if (totalCount > 0) {
           const fetchLimit = 1000;
-          const fetchPromises = [];
-          
-          for (let offset = 0; offset < totalCount; offset += fetchLimit) {
-            fetchPromises.push(
-              sb.from(storeName === 'users' ? 'app_users' : storeName)
-                .select('*')
-                .range(offset, offset + fetchLimit - 1)
-            );
-          }
+          const tableName = storeName === 'users' ? 'app_users' : storeName;
 
-          // 2. Lancer les requêtes en parallèle (par lots de 5 pour ne pas surcharger)
-          for (let i = 0; i < fetchPromises.length; i += 5) {
-            const chunk = fetchPromises.slice(i, i + 5);
-            const results = await Promise.all(chunk);
+          // Fetch par lots de 5, créés paresseusement pour éviter les requêtes inutiles si hors-ligne
+          for (let offset = 0; offset < totalCount; offset += fetchLimit * 5) {
+            if (!navigator.onLine) break; // Stop immédiat si connexion perdue
+            const batch = [];
+            for (let j = 0; j < 5 && (offset + j * fetchLimit) < totalCount; j++) {
+              const o = offset + j * fetchLimit;
+              batch.push(sb.from(tableName).select('*').range(o, o + fetchLimit - 1));
+            }
+            const results = await Promise.all(batch);
             for (const res of results) {
               if (res.error) throw res.error;
               if (res.data) allData = allData.concat(res.data);

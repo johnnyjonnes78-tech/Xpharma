@@ -1,4 +1,4 @@
-﻿/**
+/**
  * OrdiveX — Module Traçabilité & Pharmacovigilance
  * Tracking complet lot <i data-lucide="arrow-right"></i> patient, rappels, ANSS
  */
@@ -1843,6 +1843,8 @@ window.submitPlanAudit = submitPlanAudit;
 window.updateAuditStatus = updateAuditStatus;
 window.loadControlledSubstancesTab = loadControlledSubstancesTab;
 window.exportControlledRegister = exportControlledRegister;
+window.renderCtrlStockPage = renderCtrlStockPage;
+window.renderCtrlMovPage = renderCtrlMovPage;
 
 // ═══════════════════════════════════════════════════════════════════
 // REGISTRE DES STUPÉFIANTS — Substances Contrôlées
@@ -1868,22 +1870,42 @@ async function loadControlledSubstancesTab() {
     const saleMap = {};
     sales.forEach(s => { saleMap[s.id] = s; });
 
-    // Mouvements des substances contrôlées
     const controlledMovements = movements
       .filter(m => controlledIds.has(m.productId))
       .sort((a, b) => new Date(b.date) - new Date(a.date));
 
-    // Lots des substances contrôlées
-    const controlledLots = lots.filter(l => controlledIds.has(l.productId));
-
-    // Stock actuel
-    const stockSummary = controlledProducts.map(p => {
-      const pLots = controlledLots.filter(l => l.productId === p.id && l.status === 'active');
-      const totalStock = pLots.reduce((a, l) => a + (l.quantity || 0), 0);
-      const entries = controlledMovements.filter(m => m.productId === p.id && m.type === 'ENTRY').reduce((a, m) => a + Math.abs(m.quantity || 0), 0);
-      const exits = controlledMovements.filter(m => m.productId === p.id && m.type === 'EXIT').reduce((a, m) => a + Math.abs(m.quantity || 0), 0);
-      return { ...p, totalStock, entries, exits, lots: pLots };
+    // Map lots par produit pour O(1)
+    const lotsMap = new Map();
+    lots.forEach(l => {
+      if (controlledIds.has(l.productId)) {
+        if (!lotsMap.has(l.productId)) lotsMap.set(l.productId, []);
+        lotsMap.get(l.productId).push(l);
+      }
     });
+
+    // Map mouvements par produit pour O(1)
+    const movByProduct = new Map();
+    controlledMovements.forEach(m => {
+      if (!movByProduct.has(m.productId)) movByProduct.set(m.productId, { entries: 0, exits: 0 });
+      const acc = movByProduct.get(m.productId);
+      if (m.type === 'ENTRY') acc.entries += Math.abs(m.quantity || 0);
+      else acc.exits += Math.abs(m.quantity || 0);
+    });
+
+    const stockSummary = controlledProducts.map(p => {
+      const pLots = (lotsMap.get(p.id) || []).filter(l => l.status === 'active');
+      const totalStock = pLots.reduce((a, l) => a + (l.quantity || 0), 0);
+      const stats = movByProduct.get(p.id) || { entries: 0, exits: 0 };
+      return { ...p, totalStock, entries: stats.entries, exits: stats.exits, lots: pLots };
+    });
+
+    // Sauver pour pagination
+    window._controlledStockSummary = stockSummary;
+    window._controlledMovements = controlledMovements;
+    window._controlledProductMap = productMap;
+    window._controlledSaleMap = saleMap;
+    window._ctrlStockPage = 0;
+    window._ctrlMovPage = 0;
 
     tab.innerHTML = `
       <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:20px">
@@ -1902,74 +1924,121 @@ async function loadControlledSubstancesTab() {
           <span class="text-muted">Allez dans le Catalogue pour activer le statut "Substance Contrôlée" sur les produits concernés.</span>
         </div>
       ` : `
-        <!-- Résumé des stocks SC -->
         <div class="info-box info-danger" style="margin-bottom:20px">
           <strong>⚠️ Réglementation :</strong> Ce registre est obligatoire conformément à l'article 47 du Code de la Santé Publique.
           Chaque entrée et sortie de substance contrôlée doit être tracée, datée et signée.
         </div>
 
-        <div class="table-wrapper" style="margin-bottom:30px">
-          <table class="data-table">
-            <thead><tr>
-              <th>Produit</th><th>Classification</th><th>Stock actuel</th><th>Total entrées</th><th>Total sorties</th><th>Lots actifs</th>
-            </tr></thead>
-            <tbody>
-              ${stockSummary.map(p => `
-                <tr>
-                  <td><strong>${p.name}</strong><br><span class="text-muted text-sm">${p.dci || ''} ${p.dosage || ''}</span></td>
-                  <td><span class="badge badge-danger">${p.controlledClass || 'SC'}</span></td>
-                  <td><strong>${p.totalStock}</strong> unités</td>
-                  <td style="color:var(--success-color)">+${p.entries}</td>
-                  <td style="color:var(--danger-color)">-${p.exits}</td>
-                  <td>${p.lots.length}</td>
-                </tr>
-              `).join('')}
-            </tbody>
-          </table>
-        </div>
+        <div id="ctrl-stock-table"></div>
 
-        <!-- Journal des mouvements SC -->
         <h3 class="section-subtitle">Journal des mouvements</h3>
-        ${controlledMovements.length === 0 ? '<div class="empty-state-small">Aucun mouvement enregistré</div>' : `
-        <div class="table-wrapper" style="max-height:500px; overflow-y:auto;">
-          <table class="data-table">
-            <thead><tr>
-              <th>Date</th><th>Produit</th><th>Type</th><th>Quantité</th><th>N° Lot</th><th>Référence</th><th>Patient / Note</th><th>Opérateur</th>
-            </tr></thead>
-            <tbody>
-              ${controlledMovements.slice(0, 200).map(m => {
-                const prod = productMap[m.productId];
-                const isEntry = m.type === 'ENTRY';
-                // Find patient from sale
-                let patientInfo = m.note || '—';
-                if (m.reference && m.reference.startsWith('SALE-')) {
-                  const saleId = parseInt(m.reference.replace('SALE-', ''));
-                  const sale = saleMap[saleId];
-                  if (sale?.patientName) patientInfo = sale.patientName;
-                }
-                return `<tr>
-                  <td style="white-space:nowrap">${UI.formatDateTime ? UI.formatDateTime(m.date) : UI.formatDate(m.date)}</td>
-                  <td><strong>${prod?.name || '—'}</strong></td>
-                  <td><span class="badge badge-${isEntry ? 'success' : 'danger'}">${isEntry ? '⬆ Entrée' : '⬇ Sortie'}</span><br><span class="text-muted text-sm">${m.subType || ''}</span></td>
-                  <td style="font-weight:700; color:${isEntry ? 'var(--success-color)' : 'var(--danger-color)'}">${isEntry ? '+' : ''}${m.quantity}</td>
-                  <td><code class="code-tag">${m.lotNumber || '—'}</code></td>
-                  <td><span class="text-muted text-sm">${m.reference || '—'}</span></td>
-                  <td>${patientInfo}</td>
-                  <td>${m.userId || '—'}</td>
-                </tr>`;
-              }).join('')}
-            </tbody>
-          </table>
-        </div>
-        `}
+        <div id="ctrl-mov-table"></div>
       `}
     `;
+
+    if (controlledProducts.length) {
+      renderCtrlStockPage();
+      renderCtrlMovPage();
+    }
     if (window.lucide) lucide.createIcons();
   } catch (e) {
     console.error('[Controlled] Error:', e);
     tab.innerHTML = '<div class="empty-state-small"><i data-lucide="alert-triangle"></i> Erreur chargement registre</div>';
     if (window.lucide) lucide.createIcons();
   }
+}
+
+function renderCtrlStockPage() {
+  const container = document.getElementById('ctrl-stock-table');
+  if (!container) return;
+  const data = window._controlledStockSummary || [];
+  const PAGE = 100;
+  const page = window._ctrlStockPage || 0;
+  const totalPages = Math.ceil(data.length / PAGE);
+  const slice = data.slice(page * PAGE, (page + 1) * PAGE);
+
+  container.innerHTML = `
+    <div class="table-wrapper" style="margin-bottom:10px">
+      <table class="data-table">
+        <thead><tr>
+          <th>Produit</th><th>Classification</th><th>Stock actuel</th><th>Total entrées</th><th>Total sorties</th><th>Lots actifs</th>
+        </tr></thead>
+        <tbody>
+          ${slice.map(p => `
+            <tr>
+              <td><strong>${p.name}</strong><br><span class="text-muted text-sm">${p.dci || ''} ${p.dosage || ''}</span></td>
+              <td><span class="badge badge-danger">${p.controlledClass || 'SC'}</span></td>
+              <td><strong>${p.totalStock}</strong> unités</td>
+              <td style="color:var(--success-color)">+${p.entries}</td>
+              <td style="color:var(--danger-color)">-${p.exits}</td>
+              <td>${p.lots.length}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    </div>
+    ${totalPages > 1 ? `<div class="pagination-bar" style="margin-bottom:20px">
+      <button class="btn btn-sm btn-secondary" ${page === 0 ? 'disabled' : ''} onclick="window._ctrlStockPage--;renderCtrlStockPage()">← Précédent</button>
+      <span class="text-muted">Page ${page + 1} / ${totalPages} (${data.length} produits)</span>
+      <button class="btn btn-sm btn-secondary" ${page >= totalPages - 1 ? 'disabled' : ''} onclick="window._ctrlStockPage++;renderCtrlStockPage()">Suivant →</button>
+    </div>` : ''}
+  `;
+  if (window.lucide) lucide.createIcons();
+}
+
+function renderCtrlMovPage() {
+  const container = document.getElementById('ctrl-mov-table');
+  if (!container) return;
+  const data = window._controlledMovements || [];
+  const productMap = window._controlledProductMap || {};
+  const saleMap = window._controlledSaleMap || {};
+  const PAGE = 100;
+  const page = window._ctrlMovPage || 0;
+  const totalPages = Math.ceil(data.length / PAGE);
+  const slice = data.slice(page * PAGE, (page + 1) * PAGE);
+
+  if (data.length === 0) {
+    container.innerHTML = '<div class="empty-state-small">Aucun mouvement enregistré</div>';
+    return;
+  }
+
+  container.innerHTML = `
+    <div class="table-wrapper">
+      <table class="data-table">
+        <thead><tr>
+          <th>Date</th><th>Produit</th><th>Type</th><th>Quantité</th><th>N° Lot</th><th>Référence</th><th>Patient / Note</th><th>Opérateur</th>
+        </tr></thead>
+        <tbody>
+          ${slice.map(m => {
+            const prod = productMap[m.productId];
+            const isEntry = m.type === 'ENTRY';
+            let patientInfo = m.note || '—';
+            if (m.reference && m.reference.startsWith('SALE-')) {
+              const saleId = parseInt(m.reference.replace('SALE-', ''));
+              const sale = saleMap[saleId];
+              if (sale?.patientName) patientInfo = sale.patientName;
+            }
+            return `<tr>
+              <td style="white-space:nowrap">${UI.formatDateTime ? UI.formatDateTime(m.date) : UI.formatDate(m.date)}</td>
+              <td><strong>${prod?.name || '—'}</strong></td>
+              <td><span class="badge badge-${isEntry ? 'success' : 'danger'}">${isEntry ? '⬆ Entrée' : '⬇ Sortie'}</span><br><span class="text-muted text-sm">${m.subType || ''}</span></td>
+              <td style="font-weight:700; color:${isEntry ? 'var(--success-color)' : 'var(--danger-color)'}">${isEntry ? '+' : ''}${m.quantity}</td>
+              <td><code class="code-tag">${m.lotNumber || '—'}</code></td>
+              <td><span class="text-muted text-sm">${m.reference || '—'}</span></td>
+              <td>${patientInfo}</td>
+              <td>${m.userId || '—'}</td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+    </div>
+    ${totalPages > 1 ? `<div class="pagination-bar" style="margin-top:10px">
+      <button class="btn btn-sm btn-secondary" ${page === 0 ? 'disabled' : ''} onclick="window._ctrlMovPage--;renderCtrlMovPage()">← Précédent</button>
+      <span class="text-muted">Page ${page + 1} / ${totalPages} (${data.length} mouvements)</span>
+      <button class="btn btn-sm btn-secondary" ${page >= totalPages - 1 ? 'disabled' : ''} onclick="window._ctrlMovPage++;renderCtrlMovPage()">Suivant →</button>
+    </div>` : ''}
+  `;
+  if (window.lucide) lucide.createIcons();
 }
 
 async function exportControlledRegister() {
