@@ -1689,7 +1689,7 @@ async function validerVente() {
   }
 
   const btn = document.getElementById('btn-valider');
-  if (btn) { btn.disabled = true; btn.innerHTML = '<i data-lucide="loader-2" class="spin"></i> Traitement…'; if (window.lucide) lucide.createIcons(); }
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Traitement…'; }
 
   try {
     // Lazy-load lots pour FEFO (chargés à la demande, pas au démarrage)
@@ -1799,7 +1799,13 @@ async function validerVente() {
 
     const saleId = await DB.dbAdd('sales', saleData);
 
-    for (const item of posCart) {
+    // Charger le stock UNE SEULE FOIS (pas dans la boucle !)
+    const stockAll = await DB.dbGetAll('stock');
+    const stockMap = new Map();
+    stockAll.forEach(s => stockMap.set(s.productId, s));
+
+    // Traiter tous les articles en parallèle
+    const itemPromises = posCart.map(async (item) => {
       const p = posProductsCache.get(item.productId) || posProducts.find(x => x.id === item.productId);
       const isBox = (item.saleMode === 'box');
       const isSub = (item.saleMode === 'subunit');
@@ -1832,8 +1838,9 @@ async function validerVente() {
         purchasePrice: item.purchasePrice, total: item.total,
         lotNumber: assignedLotNumber, saleMode: item.saleMode || 'box'
       });
-      const stockAll = await DB.dbGetAll('stock');
-      const se = stockAll.find(s => s.productId === item.productId);
+      
+      // Lookup stock direct via Map O(1) au lieu de dbGetAll
+      const se = stockMap.get(item.productId);
       if (se) {
         const nq = Math.max(0, se.quantity - deductQty);
         await DB.dbPut('stock', { ...se, quantity: nq });
@@ -1847,7 +1854,8 @@ async function validerVente() {
         lotNumber: assignedLotNumber,
         note: posCurrentPatient ? `Patient: ${posCurrentPatient.name}` : 'Vente comptoir',
       });
-    }
+    });
+    await Promise.all(itemPromises);
 
     if (posCurrentRx?.id) {
       const rx = await DB.dbGet('prescriptions', posCurrentRx.id);
@@ -1881,6 +1889,7 @@ async function validerVente() {
     triggerFeedback('success', `Vente #${String(saleId).padStart(6, '0')} validée !`);
 
     // Afficher reçu officiel
+    const soldPids = [...new Set(posCart.map(c => c.productId))];
     await afficherRecu(saleId, [...posCart], saleData);
 
     // Reset POS
@@ -1891,14 +1900,16 @@ async function validerVente() {
     const rxtog = document.getElementById('rx-toggle');
     if (rxtog) { rxtog.checked = false; onRxToggle(false); }
     resetMobilePayUI();
-    refreshCartUI(); refreshGrid();
+    refreshCartUI();
+    // Mettre à jour uniquement les cartes des produits vendus
+    soldPids.forEach(pid => updateCardUI(pid));
     if (typeof updateAlertBadge === 'function') updateAlertBadge();
 
   } catch (err) {
     console.error(err);
     UI.toast('Erreur : ' + err.message, 'error');
   } finally {
-    if (btn) { btn.disabled = false; btn.innerHTML = '<i data-lucide="check-circle"></i> Valider la Vente'; if (window.lucide) lucide.createIcons(); }
+    if (btn) { btn.disabled = false; btn.innerHTML = '<i data-lucide="check-circle"></i> Valider (F5)'; const g = document.getElementById('pos-grid'); if (g && window.lucide) lucide.createIcons({node: g}); }
   }
 }
 
