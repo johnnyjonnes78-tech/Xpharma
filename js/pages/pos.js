@@ -15,6 +15,7 @@ let posActiveCategory = '';
 let posMobilePayState = 'idle'; // idle | en_attente | confirme | echoue
 let _posDataReady = false; // Cache session : données déjà chargées
 let _posDataTime = 0; // Timestamp du dernier chargement
+let posProductsCache = new Map(); // Cache pour les produits cliqués/ajoutés
 
 // ═══════════════════════════════════════════════════════════════════
 // INTERACTIONS MÉDICAMENTEUSES — Base statique des 30 combinaisons critiques
@@ -187,13 +188,20 @@ async function renderPOS(container) {
   } else {
     const loadPOS = async () => {
       if (DB._isPulling) { let w=0; while(DB._isPulling && w<60000){await new Promise(r=>setTimeout(r,500));w+=500;} }
-      const [products, stockAll] = await Promise.all([
-        DB.dbGetAll('products'),
-        DB.dbGetAll('stock'),
-      ]);
-      posProducts = products.filter(p => p.status !== 'inactive');
+      const isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
+      const stockAll = await DB.dbGetAll('stock');
       posStock = {};
       stockAll.forEach(s => { posStock[s.productId] = s.quantity; });
+      
+      let products;
+      if (isMobile) {
+        products = await DB.dbSearchProducts('', 100);
+      } else {
+        products = await DB.dbGetAll('products');
+      }
+      posProducts = products.filter(p => p.status !== 'inactive');
+      posProducts.forEach(p => posProductsCache.set(p.id, p));
+      
       posLots = [];
       _posDataReady = true;
       _posDataTime = Date.now();
@@ -542,7 +550,15 @@ function initPosSearch() {
     posCurrentPage = 0; // Reset à la page 1 quand on cherche
     // Debounce: attend 250ms après la dernière frappe avant de filtrer
     clearTimeout(_posSearchTimer);
-    _posSearchTimer = setTimeout(() => refreshGrid(), 250);
+    _posSearchTimer = setTimeout(async () => {
+      const isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
+      if (isMobile) {
+         const res = await DB.dbSearchProducts(posSearch, 100);
+         posProducts = res;
+         posProducts.forEach(p => posProductsCache.set(p.id, p));
+      }
+      refreshGrid();
+    }, 250);
   });
 }
 
@@ -552,7 +568,16 @@ function clearPosSearch() {
   const inp = document.getElementById('pos-search');
   if (inp) inp.value = '';
   document.getElementById('pos-clearsearch').style.display = 'none';
-  refreshGrid();
+  const isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
+  if (isMobile) {
+    DB.dbSearchProducts('', 100).then(res => {
+      posProducts = res;
+      posProducts.forEach(p => posProductsCache.set(p.id, p));
+      refreshGrid();
+    });
+  } else {
+    refreshGrid();
+  }
 }
 
 let posSortMode = 'default';
@@ -620,7 +645,6 @@ function refreshGrid() {
     const inCart = posCart.find(c => c.productId === p.id);
     const rupt = q === 0;
     const low = q > 0 && q <= (p.minStock || 10);
-    const alts = rupt ? findGenericAlternatives(p) : [];
     const isRx = p.requiresPrescription;
     const marginInfo = isAdmin && p.purchasePrice ? `<span class="prod-margin">Marge: ${Math.round(((p.salePrice - p.purchasePrice) / p.salePrice) * 100)}%</span>` : '';
 
@@ -633,7 +657,7 @@ function refreshGrid() {
     // Stock affiché de manière intelligente
     let stockText = '';
     if (rupt) {
-      stockText = alts.length ? '<i data-lucide="repeat"></i> Alt.' : '<i data-lucide="x-circle"></i> Rupture';
+      stockText = '<i data-lucide="x-circle"></i> Rupture';
     } else if (p.allowUnitSale) {
       const totU = (p.unitsPerBox || 1) * (p.subUnitsPerBox || 1);
       const boxes = Math.floor(q / totU);
@@ -644,7 +668,7 @@ function refreshGrid() {
     }
 
     return `<div class="prod-card ${rupt ? 'prod-rupt' : ''} ${inCart ? 'prod-incart' : ''} ${low ? 'prod-low' : ''}" data-pid="${p.id}"
-       onclick="${rupt ? (alts.length ? `showGenericAlternatives(${p.id})` : "UI.toast('Rupture de stock — aucune alternative DCI en stock','error')") : `addToCart(${p.id})`}">
+       onclick="${rupt ? `handleRuptureClick(${p.id})` : `addToCart(${p.id})`}">
       <div class="prod-top">
         ${isRx ? '<span class="tag-rx">Rx</span>' : '<span class="tag-otc">OTC</span>'}
         ${p.isControlled ? '<span class="tag-rx" style="background:#e74c3c">SC</span>' : ''}
@@ -696,7 +720,7 @@ function refreshGrid() {
 // PANIER
 // ═══════════════════════════════════════════════════════════════════
 function addToCart(productId, mode = 'box') {
-  const p = posProducts.find(x => x.id === productId);
+  const p = posProductsCache.get(productId) || posProducts.find(x => x.id === productId);
   if (!p) return;
   const avail = posStock[productId] || 0;
   const existing = posCart.find(c => c.productId === productId && (c.saleMode || 'box') === mode);
@@ -760,7 +784,7 @@ function addToCart(productId, mode = 'box') {
 }
 
 function checkStockCart(productId) {
-  const p = posProducts.find(x => x.id === productId);
+  const p = posProductsCache.get(productId) || posProducts.find(x => x.id === productId);
   const avail = posStock[productId] || 0;
   const totU = (p.unitsPerBox || 1) * (p.subUnitsPerBox || 1);
   const currentlyInCart = posCart.filter(c => c.productId === productId).reduce((sum, c) => {
@@ -1485,7 +1509,7 @@ async function attachRx(rxId) {
   // Charger les médicaments prescrits dans le panier
   let added = 0, skipped = [];
   for (const item of (rx.items || [])) {
-    const prod = posProducts.find(p => p.id === item.productId);
+    const prod = posProductsCache.get(item.productId) || posProducts.find(p => p.id === item.productId);
     if (prod && (posStock[prod.id] || 0) > 0) {
       const want = item.quantity || 1;
       const have = posStock[prod.id] || 0;
@@ -1770,7 +1794,7 @@ async function validerVente() {
     const saleId = await DB.dbAdd('sales', saleData);
 
     for (const item of posCart) {
-      const p = posProducts.find(x => x.id === item.productId);
+      const p = posProductsCache.get(item.productId) || posProducts.find(x => x.id === item.productId);
       const isBox = (item.saleMode === 'box');
       const isSub = (item.saleMode === 'subunit');
       let deductQty = item.qty;
@@ -2319,16 +2343,23 @@ async function saveQuickRx() {
 window.showQuickNewRx = showQuickNewRx;
 window.saveQuickRx = saveQuickRx;
 
-function searchByBarcode(code) {
+async function searchByBarcode(code) {
   if (!code || !code.trim()) { UI.toast('Veuillez entrer un code', 'warning'); return; }
   code = code.trim().toUpperCase();
-  const product = posProducts.find(p =>
+  let product = posProducts.find(p =>
     (p.code || '').toUpperCase() === code ||
     (p.ean || '').toUpperCase() === code ||
     (p.cip || '').toUpperCase() === code
   );
+  
+  if (!product) {
+     const res = await DB.dbSearchProducts(code, 10);
+     product = res.find(p => (p.code || '').toUpperCase() === code || (p.ean || '').toUpperCase() === code || (p.cip || '').toUpperCase() === code);
+  }
+
   UI.closeModal();
   if (product) {
+    posProductsCache.set(product.id, product);
     addToCart(product.id);
     UI.toast(`✅ ${product.name} ajouté au panier`, 'success');
   } else {
@@ -2338,7 +2369,7 @@ function searchByBarcode(code) {
     if (searchInput) {
       searchInput.value = code;
       posSearch = code.toLowerCase();
-      refreshGrid();
+      searchInput.dispatchEvent(new Event('input'));
     }
   }
 }
@@ -2489,10 +2520,28 @@ async function loadRecentSales() {
 // ═══════════════════════════════════════════════════════════════════
 // SUBSTITUTION GÉNÉRIQUE — Popup alternatives DCI
 // ═══════════════════════════════════════════════════════════════════
-function showGenericAlternatives(productId) {
-  const p = posProducts.find(x => x.id === productId);
-  if (!p) return;
-  const alts = findGenericAlternatives(p);
+async function handleRuptureClick(productId) {
+  const p = posProductsCache.get(productId) || posProducts.find(x => x.id === productId);
+  if (!p || !p.dci) { UI.toast('Rupture de stock — aucune alternative DCI en stock','error'); return; }
+  
+  const isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
+  let alts = [];
+  if (isMobile) {
+    const res = await DB.dbSearchProducts(p.dci, 50);
+    alts = res.filter(a => a.id !== p.id && a.dci === p.dci && (posStock[a.id] || 0) > 0);
+  } else {
+    alts = posProducts.filter(a => a.id !== p.id && a.dci === p.dci && (posStock[a.id] || 0) > 0);
+  }
+  
+  if (alts.length > 0) {
+    alts.forEach(a => posProductsCache.set(a.id, a));
+    showGenericAlternatives(p, alts);
+  } else {
+    UI.toast('Rupture de stock — aucune alternative DCI en stock','error');
+  }
+}
+
+function showGenericAlternatives(p, alts) {
   if (!alts.length) { UI.toast('Aucune alternative générique en stock', 'info'); return; }
   UI.modal(`<i data-lucide="repeat" class="modal-icon-inline"></i> Alternatives Génériques — ${p.dci}`, `
     <div class="info-box info-primary" style="margin-bottom:16px">

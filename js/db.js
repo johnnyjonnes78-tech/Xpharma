@@ -553,6 +553,60 @@ async function dbGetRecent(storeName, indexName, limit = 200) {
   });
 }
 
+/**
+ * Recherche produits par curseur — ne charge JAMAIS tout en RAM.
+ * Parcourt les produits un par un et retourne les max premiers résultats matchant query.
+ * Pour mobile POS avec 100k+ produits.
+ */
+async function dbSearchProducts(query, max = 50) {
+  if (!db) await initDB();
+  const q = (query || '').toLowerCase().trim();
+  return new Promise((resolve) => {
+    try {
+      const tx = db.transaction('products', 'readonly');
+      const store = tx.objectStore('products');
+      const results = [];
+      const cursorReq = store.openCursor();
+      cursorReq.onsuccess = (e) => {
+        const cursor = e.target.result;
+        if (!cursor || results.length >= max) { resolve(results); return; }
+        const p = cursor.value;
+        if (p.status === 'inactive') { cursor.continue(); return; }
+        if (!q) {
+          results.push(p);
+        } else {
+          const match = (p.name || '').toLowerCase().includes(q)
+            || (p.dci || '').toLowerCase().includes(q)
+            || (p.code || '').toLowerCase().includes(q)
+            || (p.ean || '').toLowerCase().includes(q)
+            || (p.cip || '').toLowerCase().includes(q);
+          if (match) results.push(p);
+        }
+        cursor.continue();
+      };
+      cursorReq.onerror = () => resolve([]);
+    } catch (e) {
+      resolve([]);
+    }
+  });
+}
+
+/**
+ * Compte les produits actifs sans les charger en RAM
+ */
+async function dbCountProducts() {
+  if (!db) await initDB();
+  return new Promise((resolve) => {
+    try {
+      const tx = db.transaction('products', 'readonly');
+      const store = tx.objectStore('products');
+      const req = store.count();
+      req.onsuccess = () => resolve(req.result || 0);
+      req.onerror = () => resolve(0);
+    } catch(e) { resolve(0); }
+  });
+}
+
 async function dbDelete(storeName, id) {
   _invalidateCache(storeName);
   return new Promise((resolve, reject) => {
