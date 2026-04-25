@@ -81,9 +81,33 @@ const AppState = {
 let _realtimeSubscription = null;
 let _realtimeTimeout = null;
 
+// ── Connexion Resilience Engine ──
+let _connectivityDebounceTimer = null;
+let _lastConnState = navigator.onLine;
+let _reconnectAttempts = 0;
+const _MAX_RECONNECT_DELAY = 60000; // 60s max
+let _realtimeCooldown = false;
+let _lastLogMessages = {};
+
+// Empêche les logs répétitifs (même message dans les 30 dernières secondes)
+function _logOnce(level, msg) {
+  const now = Date.now();
+  if (_lastLogMessages[msg] && (now - _lastLogMessages[msg]) < 30000) return;
+  _lastLogMessages[msg] = now;
+  if (level === 'warn') console.warn(msg);
+  else console.log(msg);
+}
+
+// Calcul du délai de backoff exponentiel
+function _getBackoffDelay() {
+  const base = 5000; // 5 secondes
+  const delay = Math.min(base * Math.pow(2, _reconnectAttempts), _MAX_RECONNECT_DELAY);
+  return delay;
+}
+
 async function getSupabaseClient() {
   if (_supabaseInstance) {
-    if (AppState.isOnline && navigator.onLine) _setupRealtime(_supabaseInstance);
+    // Ne PAS relancer le realtime ici à chaque appel — c'est géré par le reconnect handler
     return _supabaseInstance;
   }
   try {
@@ -116,7 +140,12 @@ async function getSupabaseClient() {
 }
 
 function _setupRealtime(sbClient) {
-  if (_realtimeSubscription || !navigator.onLine) return;
+  // Gardes strictes : ne pas reconnecter si déjà connecté, hors-ligne, ou en cooldown
+  if (_realtimeSubscription || !navigator.onLine || _realtimeCooldown) return;
+
+  // Activer le cooldown pour éviter les boucles de reconnexion WebSocket
+  _realtimeCooldown = true;
+  setTimeout(() => { _realtimeCooldown = false; }, 30000); // 30s de cooldown
 
   // Mapping table Supabase → store IndexedDB
   const _tableToStore = { app_users: 'users' };
@@ -130,22 +159,16 @@ function _setupRealtime(sbClient) {
     .on('postgres_changes', { event: '*', schema: 'public' }, async (payload) => {
       const tableName = payload.table;
       const storeName = _tableToStore[tableName] || tableName;
-      const eventType = payload.eventType; // INSERT, UPDATE, DELETE
+      const eventType = payload.eventType;
 
-      // Ignorer les tables non gérées
       if (!_validStores.has(storeName)) return;
 
       try {
         if (eventType === 'DELETE' && payload.old?.id) {
-          // ── SUPPRESSION : retirer l'item local ──
           await dbDelete(storeName, payload.old.id);
-          console.log(`[RT] 🗑️ ${storeName}/${payload.old.id} supprimé`);
-
         } else if ((eventType === 'INSERT' || eventType === 'UPDATE') && payload.new) {
-          // ── INSERTION/MISE À JOUR : écrire directement dans IndexedDB ──
           const item = { ...payload.new, _synced: true, _updatedAt: Date.now() };
 
-          // Conversion des champs qui doivent être des strings
           const mustBeString = ['username','password','code','lotNumber','phone','dnpm',
             'pharmacy_phone','pharmacy_dnpm','pharmacy_name','key','value'];
           for (const key of Object.keys(item)) {
@@ -156,26 +179,25 @@ function _setupRealtime(sbClient) {
             }
           }
 
-          // Ignorer les settings marqués DELETED
           if (storeName === 'settings' && item.status === 'DELETED') {
             await dbDelete(storeName, item.id);
           } else {
             await _dbPutRaw(storeName, item);
             _invalidateCache(storeName);
           }
-          console.log(`[RT] ⚡ ${storeName}/${item.id} ${eventType === 'INSERT' ? 'ajouté' : 'mis à jour'}`);
         }
       } catch (err) {
-        // En cas d'erreur, on ne fait rien — le pull de 30 min rattrapera
-        console.warn(`[RT] Erreur sync instantanée ${storeName}:`, err.message);
+        // Silencieux — le pull rattrapera
       }
     })
     .subscribe((status, err) => {
        if (status === 'SUBSCRIBED') {
-         console.log('[Flash] 📡 Connecté au temps réel Supabase (sync instantanée)');
+         _logOnce('log', '[Flash] Connecté au temps réel Supabase');
+         _reconnectAttempts = 0; // Reset le backoff sur succès
        } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
          try { sbClient.removeChannel(_realtimeSubscription).catch(()=>{}); } catch(e){}
          _realtimeSubscription = null;
+         // Ne PAS retenter immédiatement — le backoff gère ça
        }
     });
 }
@@ -756,7 +778,9 @@ async function trackInstallation() {
 }
 
 async function syncToSupabase() {
+  // Triple garde : empêcher toute tentative réseau si hors-ligne
   if (_syncInProgress) return;
+  if (!navigator.onLine || !AppState.isOnline) return;
   _syncInProgress = true;
 
   try {
@@ -1473,41 +1497,71 @@ if (typeof indexedDB !== 'undefined') {
   });
 }
 
-// Intercepteurs stricts pour supprimer totalement les tentatives réseau hors ligne
-window.addEventListener('online', () => {
-  AppState.isOnline = true;
-  console.log('[App] 🟢 Connexion internet rétablie.');
-  // Attendre 3s pour que le réseau se stabilise avant de relancer
-  setTimeout(() => {
-    if (!navigator.onLine) return;
-    // Relancer le auto-refresh du token
-    if (_supabaseInstance?.auth?.startAutoRefresh) {
-      _supabaseInstance.auth.startAutoRefresh();
-    }
-    syncToSupabase().catch(() => {});
-  }, 3000);
-});
+// ═══════════════════════════════════════════════════════════════════
+// CONNEXION RESILIENCE ENGINE — Debounce + Backoff Exponentiel
+// Empêche les boucles online/offline et les reconnexions en rafale
+// ═══════════════════════════════════════════════════════════════════
 
-window.addEventListener('offline', () => {
-  AppState.isOnline = false;
-  console.log('[App] 🔴 Connexion perdue — mode hors-ligne activé');
-  // Mettre en pause le client Supabase (sans le détruire pour éviter 'Multiple GoTrueClient')
-  if (_supabaseInstance) {
-    try {
-      // Stopper le rafraîchissement automatique du token
-      if (_supabaseInstance.auth?.stopAutoRefresh) {
-        _supabaseInstance.auth.stopAutoRefresh();
+function _handleConnectivityChange(isOnline) {
+  // Ignorer si l'état n'a pas réellement changé
+  if (isOnline === _lastConnState) return;
+  _lastConnState = isOnline;
+
+  // Debounce : attendre 5 secondes de stabilité avant de réagir
+  clearTimeout(_connectivityDebounceTimer);
+  _connectivityDebounceTimer = setTimeout(() => {
+    // Vérifier à nouveau après le debounce
+    const actuallyOnline = navigator.onLine;
+    if (actuallyOnline === AppState.isOnline) return; // Pas de changement réel
+
+    if (actuallyOnline) {
+      // ── RECONNEXION ──
+      AppState.isOnline = true;
+      _logOnce('log', '[App] Connexion internet rétablie');
+
+      // Backoff exponentiel : ne pas tout relancer immédiatement
+      const delay = _getBackoffDelay();
+      _reconnectAttempts++;
+
+      setTimeout(() => {
+        if (!navigator.onLine) return; // Re-vérifier avant d'agir
+
+        // Relancer le auto-refresh du token
+        if (_supabaseInstance?.auth?.startAutoRefresh) {
+          _supabaseInstance.auth.startAutoRefresh();
+        }
+        // Relancer le realtime (avec cooldown intégré)
+        if (_supabaseInstance) _setupRealtime(_supabaseInstance);
+        // Tenter un sync
+        syncToSupabase().then(() => {
+          _reconnectAttempts = 0; // Reset sur succès
+        }).catch(() => {});
+      }, delay);
+
+    } else {
+      // ── DÉCONNEXION ──
+      AppState.isOnline = false;
+      _logOnce('log', '[App] Mode hors-ligne activé');
+
+      // Mettre en pause Supabase proprement
+      if (_supabaseInstance) {
+        try {
+          if (_supabaseInstance.auth?.stopAutoRefresh) {
+            _supabaseInstance.auth.stopAutoRefresh();
+          }
+          if (_realtimeSubscription) {
+            _supabaseInstance.removeChannel(_realtimeSubscription).catch(() => {});
+            _realtimeSubscription = null;
+          }
+          _supabaseInstance.realtime?.disconnect();
+        } catch (e) {}
       }
-      // Fermer les channels realtime
-      if (_realtimeSubscription) {
-        _supabaseInstance.removeChannel(_realtimeSubscription).catch(() => {});
-        _realtimeSubscription = null;
-      }
-      // Déconnecter le realtime complètement
-      _supabaseInstance.realtime?.disconnect();
-    } catch (e) {}
-  }
-});
+    }
+  }, 5000); // 5 secondes de debounce
+}
+
+window.addEventListener('online', () => _handleConnectivityChange(true));
+window.addEventListener('offline', () => _handleConnectivityChange(false));
 
 const _DBExports = { initDB, dbAdd, dbPut, dbBulkPut, dbGet, dbGetAll, dbGetRecent, dbSearchProducts, dbCountProducts, dbDelete, dbCount, dbStockValue, writeAudit, seedDemoData, syncToSupabase, pullFromSupabase, resetSupabaseClient, forceSyncAll, trackInstallation, getSupabaseClient, STORES, AppState, doBackup, startAutoBackup, startAutoPull, autoBackupToStorage, restoreFromBackup };
 Object.defineProperty(_DBExports, '_isPulling', { get: () => _isPulling });
