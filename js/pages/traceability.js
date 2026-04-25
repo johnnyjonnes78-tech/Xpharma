@@ -7,21 +7,19 @@ async function renderTraceability(container) {
   UI.loading(container, 'Chargement du module traçabilité...');
   if (DB._isPulling) { let w=0; while(DB._isPulling && w<90000){await new Promise(r=>setTimeout(r,500));w+=500;} }
 
-  const [lots, products, movements, prescriptions, patients] = await Promise.all([
+  // Chargement léger : seulement lots + produits. Mouvements/prescriptions/patients en lazy-load.
+  const [lots, products] = await Promise.all([
     DB.dbGetAll('lots'),
     DB.dbGetAll('products'),
-    DB.dbGetAll('movements'),
-    DB.dbGetAll('prescriptions'),
-    DB.dbGetAll('patients'),
   ]);
   await new Promise(r => setTimeout(r, 0));
 
   const productMap = {};
   products.forEach(p => { productMap[p.id] = p; });
 
-  // Lots expiring soon
+  // Lots expiring soon — limiter à 100 pour le rendu initial
   const today = new Date();
-  const soonExpiry = lots.filter(l => {
+  const allSoonExpiry = lots.filter(l => {
     const d = UI.daysUntilExpiry(l.expiryDate);
     return l.status === 'active' && d !== null && d <= 90 && d > 0;
   }).sort((a, b) => new Date(a.expiryDate) - new Date(b.expiryDate));
@@ -32,6 +30,13 @@ async function renderTraceability(container) {
   });
 
   const recalledLots = lots.filter(l => l.status === 'recalled');
+
+  // Pagination initiale : 100 lots visibles
+  const EXPIRY_PAGE = 100;
+  const soonExpiry = allSoonExpiry.slice(0, EXPIRY_PAGE);
+  const hasMoreExpiry = allSoonExpiry.length > EXPIRY_PAGE;
+  const expiredVisible = expiredLots.slice(0, EXPIRY_PAGE);
+  const combinedExpiry = [...expiredVisible.map(l => ({ ...l, _expired: true })), ...soonExpiry];
 
   container.innerHTML = `
     <div class="page-header">
@@ -47,7 +52,7 @@ async function renderTraceability(container) {
 
     <div class="stats-bar">
       <div class="stat-chip stat-red"><span class="stat-val">${expiredLots.length}</span><span class="stat-label">Lots expirés</span></div>
-      <div class="stat-chip stat-orange"><span class="stat-val">${soonExpiry.length}</span><span class="stat-label">Exp. &lt;90j</span></div>
+      <div class="stat-chip stat-orange"><span class="stat-val">${allSoonExpiry.length}</span><span class="stat-label">Exp. &lt;90j</span></div>
       <div class="stat-chip stat-purple"><span class="stat-val">${recalledLots.length}</span><span class="stat-label">Rappels actifs</span></div>
       <div class="stat-chip stat-blue"><span class="stat-val">${lots.filter(l => l.status === 'active').length}</span><span class="stat-label">Lots actifs</span></div>
       <div class="stat-chip stat-purple" style="border-color:#9b59b6"><span class="stat-val">${products.filter(p => p.isControlled).length}</span><span class="stat-label">Stupéfiants</span></div>
@@ -76,16 +81,15 @@ async function renderTraceability(container) {
           <button class="btn btn-xs btn-danger" onclick="blockExpiredLots()">Bloquer tous</button>
         </div>` : ''}
 
-      <h3 class="section-subtitle">Lots expirant dans les 90 jours</h3>
-      ${soonExpiry.length === 0 ? '<div class="empty-state-small"><i data-lucide="check-circle"></i> Aucun lot expirant dans les 90 prochains jours</div>' : `
+      <h3 class="section-subtitle">Lots expirant dans les 90 jours ${allSoonExpiry.length > EXPIRY_PAGE ? `<span class="text-muted text-sm">(${EXPIRY_PAGE} premiers sur ${allSoonExpiry.length})</span>` : ''}</h3>
+      ${combinedExpiry.length === 0 ? '<div class="empty-state-small"><i data-lucide="check-circle"></i> Aucun lot expirant dans les 90 prochains jours</div>' : `
         <div class="table-wrapper">
           <table class="data-table">
             <thead><tr><th>Produit</th><th>N° Lot</th><th>Stock restant</th><th>Expiration</th><th>Jours restants</th><th>Actions</th></tr></thead>
             <tbody>
-              ${[...expiredLots.map(l => ({ ...l, _expired: true })), ...soonExpiry].map(lot => {
+              ${combinedExpiry.map(lot => {
     const prod = productMap[lot.productId];
     const days = UI.daysUntilExpiry(lot.expiryDate);
-    const urgency = days <= 0 ? 'danger' : days <= 30 ? 'danger' : days <= 60 ? 'warning' : 'info';
     return `<tr class="${days <= 0 ? 'row-danger' : ''}">
                   <td><strong>${prod?.name || '—'}</strong><br><span class="text-muted text-sm">${prod?.category || ''}</span></td>
                   <td><code class="code-tag">${lot.lotNumber}</code></td>
@@ -102,7 +106,8 @@ async function renderTraceability(container) {
   }).join('')}
             </tbody>
           </table>
-        </div>`}
+        </div>
+        ${hasMoreExpiry ? `<div style="text-align:center;margin-top:12px;"><button class="btn btn-secondary" onclick="loadMoreExpiryLots()"><i data-lucide="chevrons-down"></i> Afficher ${allSoonExpiry.length - EXPIRY_PAGE} lots supplémentaires</button></div>` : ''}`}
     </div>
 
     <!-- Tab: Search -->
@@ -248,9 +253,7 @@ async function renderTraceability(container) {
 
   window._traceProductMap = productMap;
   window._traceLots = lots;
-  window._traceMovements = movements;
-  window._tracePrescriptions = prescriptions;
-  window._tracePatients = patients;
+  window._allSoonExpiry = allSoonExpiry;
 
   loadDestructionHistory();
   if (window.lucide) lucide.createIcons();
@@ -261,6 +264,42 @@ async function renderTraceability(container) {
     if (controlledBtn) controlledBtn.click();
   }, 0);
 }
+
+// Charger plus de lots d'expiration (lazy)
+window.loadMoreExpiryLots = function() {
+  const allSoonExpiry = window._allSoonExpiry || [];
+  const productMap = window._traceProductMap || {};
+  const tbody = document.querySelector('#tab-expiry .data-table tbody');
+  if (!tbody) return;
+
+  // Ajouter les lots restants après les 100 premiers
+  const remaining = allSoonExpiry.slice(100);
+  const newRows = remaining.map(lot => {
+    const prod = productMap[lot.productId];
+    const days = UI.daysUntilExpiry(lot.expiryDate);
+    return `<tr>
+      <td><strong>${prod?.name || '—'}</strong><br><span class="text-muted text-sm">${prod?.category || ''}</span></td>
+      <td><code class="code-tag">${lot.lotNumber}</code></td>
+      <td>${lot.quantity}</td>
+      <td>${UI.formatDate(lot.expiryDate)}</td>
+      <td>${UI.expiryBadge(lot.expiryDate)}</td>
+      <td>
+        <div class="actions-cell">
+          <button class="btn btn-xs btn-primary" onclick="traceLot('${lot.lotNumber}')"><i data-lucide="search"></i> Tracer</button>
+          <button class="btn btn-xs btn-warning" onclick="promoteLot(${lot.id})"><i data-lucide="megaphone"></i> Promouvoir</button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+  tbody.insertAdjacentHTML('beforeend', newRows);
+
+  // Supprimer le bouton "Voir plus"
+  const btn = document.querySelector('#tab-expiry [onclick*="loadMoreExpiryLots"]');
+  if (btn?.parentElement) btn.parentElement.remove();
+
+  if (window.lucide) lucide.createIcons();
+  UI.toast(`${remaining.length} lots supplémentaires affichés`, 'success');
+};
 
 function switchTraceTab(btn, tabId) {
   const targetId = `tab-${tabId}`;
@@ -288,8 +327,6 @@ async function doLotTrace() {
 
   const lots = window._traceLots || [];
   const productMap = window._traceProductMap || {};
-  const movements = window._traceMovements || [];
-  const prescriptions = window._tracePrescriptions || [];
 
   // Find matching lots
   const matchedLots = lots.filter(l =>
@@ -297,12 +334,18 @@ async function doLotTrace() {
     productMap[l.productId]?.name?.toLowerCase().includes(query) ||
     productMap[l.productId]?.code?.toLowerCase().includes(query) ||
     productMap[l.productId]?.dci?.toLowerCase().includes(query)
-  );
+  ).slice(0, 50); // Limiter à 50 résultats pour la performance
 
   if (matchedLots.length === 0) {
     container.innerHTML = `<div class="empty-state-small">Aucun lot trouvé pour "${query}"</div>`;
     return;
   }
+
+  // Lazy-load mouvements et prescriptions seulement maintenant
+  const [movements, prescriptions] = await Promise.all([
+    DB.dbGetAll('movements'),
+    DB.dbGetAll('prescriptions'),
+  ]);
 
   container.innerHTML = matchedLots.map(lot => {
     const prod = productMap[lot.productId];
@@ -369,15 +412,14 @@ function showLotRecallForm() {
 
   UI.modal('<i data-lucide="alert-triangle" class="modal-icon-inline"></i> Rappel de Lot', `
     <div class="info-box info-danger" style="margin-bottom:16px">
-      <strong>⚠️ Action critique</strong> — Le rappel de lot bloque immédiatement les ventes et génère une alerte SMS pour les patients concernés.
+      <strong>Action critique</strong> — Le rappel de lot bloque immédiatement les ventes et génère une alerte SMS pour les patients concernés.
     </div>
     <form id="recall-form" class="form-grid">
       <div class="form-group">
-        <label>Lot à rappeler *</label>
-        <select name="lotId" id="recall-lot-select" class="form-control" required onchange="updateRecallInfo()">
-          <option value="">Sélectionner un lot...</option>
-          ${activeLots.map(l => `<option value="${l.id}" data-product="${productMap[l.productId]?.name || ''}" data-qty="${l.quantity}">${l.lotNumber} — ${productMap[l.productId]?.name || '?'} (${l.quantity} en stock)</option>`).join('')}
-        </select>
+        <label>Rechercher le lot à rappeler *</label>
+        <input type="text" id="recall-lot-search" class="form-control" placeholder="Tapez un numéro de lot ou nom de produit..." oninput="filterRecallLots()">
+        <input type="hidden" name="lotId" id="recall-lot-id" required>
+        <div id="recall-lot-results" style="max-height:200px;overflow-y:auto;border:1px solid var(--border-color);border-radius:6px;margin-top:4px;display:none;"></div>
       </div>
       <div id="recall-lot-info" class="lot-info-box" style="display:none"></div>
       <div class="form-group">
@@ -421,8 +463,59 @@ function showLotRecallForm() {
       <button class="btn btn-danger" onclick="submitLotRecall()"><i data-lucide="alert-triangle"></i> Confirmer le Rappel</button>
   `
   });
+
+  // Stocker les lots actifs pour le filtre
+  window._recallActiveLots = activeLots;
   if (window.lucide) lucide.createIcons();
 }
+
+// Filtre de recherche pour le select de rappel (remplace le select massif)
+window.filterRecallLots = function() {
+  const query = document.getElementById('recall-lot-search')?.value.trim().toLowerCase();
+  const container = document.getElementById('recall-lot-results');
+  if (!container) return;
+
+  if (!query || query.length < 2) {
+    container.style.display = 'none';
+    return;
+  }
+
+  const activeLots = window._recallActiveLots || [];
+  const productMap = window._traceProductMap || {};
+
+  const matches = activeLots.filter(l =>
+    l.lotNumber?.toLowerCase().includes(query) ||
+    productMap[l.productId]?.name?.toLowerCase().includes(query)
+  ).slice(0, 30); // Max 30 résultats
+
+  if (matches.length === 0) {
+    container.innerHTML = '<div style="padding:8px;color:var(--text-secondary);font-size:13px;">Aucun lot trouvé</div>';
+    container.style.display = 'block';
+    return;
+  }
+
+  container.innerHTML = matches.map(l => {
+    const pName = productMap[l.productId]?.name || '?';
+    return `<div class="recall-lot-option" style="padding:8px 12px;cursor:pointer;border-bottom:1px solid var(--border-color);font-size:13px;" 
+      onmouseover="this.style.background='var(--bg-hover)'" onmouseout="this.style.background=''" 
+      onclick="selectRecallLot(${l.id},'${l.lotNumber}','${pName.replace(/'/g,"\\'")}',${l.quantity})">
+      <strong>${l.lotNumber}</strong> — ${pName} <span style="color:var(--text-secondary)">(${l.quantity} en stock)</span>
+    </div>`;
+  }).join('');
+  container.style.display = 'block';
+};
+
+window.selectRecallLot = function(id, lotNumber, productName, qty) {
+  document.getElementById('recall-lot-id').value = id;
+  document.getElementById('recall-lot-search').value = lotNumber + ' — ' + productName;
+  document.getElementById('recall-lot-results').style.display = 'none';
+  const info = document.getElementById('recall-lot-info');
+  if (info) {
+    info.style.display = 'block';
+    info.innerHTML = `<strong>Produit :</strong> ${productName} · <strong>Stock actuel :</strong> ${qty} unités`;
+    info.className = 'lot-info-box';
+  }
+};
 
 function updateRecallInfo() {
   const sel = document.getElementById('recall-lot-select');
@@ -436,6 +529,8 @@ function updateRecallInfo() {
 
 async function submitLotRecall() {
   const form = document.getElementById('recall-form');
+  const lotIdInput = document.getElementById('recall-lot-id');
+  if (!lotIdInput?.value) { UI.toast('Veuillez sélectionner un lot à rappeler', 'warning'); return; }
   if (!form?.checkValidity()) { form?.reportValidity(); return; }
   const data = Object.fromEntries(new FormData(form));
   const lotId = parseInt(data.lotId);
