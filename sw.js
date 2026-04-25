@@ -3,7 +3,7 @@
  * Cache-first PWA strategy pour fonctionnement 100% offline
  */
 
-const CACHE_NAME = 'pharma-cache-v8.8.7';
+const CACHE_NAME = 'pharma-cache-v8.8.8';
 const ASSETS = [
   './',
   './index.html',
@@ -77,24 +77,33 @@ self.addEventListener('fetch', event => {
   const url = event.request.url;
 
   // 🛡️ REQUÊTES EXTERNES (Supabase, fonts, CDN)
-  // On ESSAIE le réseau et on rattrape silencieusement si ça échoue
-  // Cela élimine les erreurs rouges même quand navigator.onLine ment
   if (!url.startsWith(self.location.origin)) {
+    // FONTS : cache-first uniquement, jamais de faux font
+    if (url.includes('fonts.g') || url.endsWith('.woff2') || url.endsWith('.woff') || url.endsWith('.ttf')) {
+      event.respondWith(
+        caches.match(event.request).then(cached => {
+          if (cached) return cached;
+          // Essayer le réseau, cacher pour la prochaine fois
+          return fetch(event.request).then(response => {
+            if (response.ok) {
+              const clone = response.clone();
+              caches.open(CACHE_NAME).then(c => c.put(event.request, clone));
+            }
+            return response;
+          }).catch(() => {
+            // Font non-cachée + offline → 204 No Content (browser utilise system font)
+            return new Response(null, { status: 204 });
+          });
+        })
+      );
+      return;
+    }
+
+    // APIS (Supabase, etc.) : try-catch silencieux
     event.respondWith(
       caches.match(event.request).then(cached => {
         if (cached) return cached;
-        return fetch(event.request).then(response => {
-          // Cacher les fonts pour la prochaine fois
-          if (response.ok && (url.includes('fonts.g') || url.endsWith('.woff2'))) {
-            const clone = response.clone();
-            caches.open(CACHE_NAME).then(c => c.put(event.request, clone));
-          }
-          return response;
-        }).catch(() => {
-          // Réseau indisponible → réponse silencieuse selon le type
-          if (url.includes('fonts.g') || url.endsWith('.woff2') || url.endsWith('.woff')) {
-            return new Response('', { status: 200, headers: { 'Content-Type': 'font/woff2' } });
-          }
+        return fetch(event.request).catch(() => {
           return new Response(JSON.stringify({ data: null, error: 'offline' }), {
             status: 200, headers: { 'Content-Type': 'application/json' }
           });
