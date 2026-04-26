@@ -17,7 +17,10 @@
     'was not released within', 'Lock "lock:sb-', 'Forcefully acquiring',
     'Failed to load resource', 'FetchEvent', 'Failed to convert',
     'Failed to decode downloaded font', 'AuthSessionMissing',
-    'Unauthorized', '401 (Unauthorized)'
+    'Auth session missing', 'signInAnonymously', 'Unauthorized',
+    '401 (Unauthorized)', '400 (Bad Request)', 'Bad Request',
+    'CORS', 'AbortError', 'TypeError: Load failed',
+    'The user aborted a request', 'CHANNEL_ERROR'
   ];
   function _isNoise(args) {
     var s = Array.prototype.join.call(args, ' ');
@@ -139,6 +142,7 @@ function _getBackoffDelay() {
   return delay;
 }
 
+let _lastSessionCheck = 0;
 async function getSupabaseClient() {
   // Guard strict : ne rien faire si hors-ligne
   if (!navigator.onLine) {
@@ -147,13 +151,17 @@ async function getSupabaseClient() {
   }
 
   if (_supabaseInstance) {
-    // Vérifier que la session auth est toujours valide (renouveler si expirée)
-    try {
-      const { data: { session } } = await _supabaseInstance.auth.getSession();
-      if (!session && _supabaseInstance.auth.signInAnonymously) {
-        await _supabaseInstance.auth.signInAnonymously();
-      }
-    } catch (e) { /* silencieux */ }
+    // Vérifier la session auth max 1x toutes les 5 min (throttle)
+    const now = Date.now();
+    if (!_lastSessionCheck || (now - _lastSessionCheck > 300000)) {
+      _lastSessionCheck = now;
+      try {
+        const { data: { session } } = await _supabaseInstance.auth.getSession();
+        if (!session && _supabaseInstance.auth.signInAnonymously) {
+          await _supabaseInstance.auth.signInAnonymously();
+        }
+      } catch (e) { /* silencieux */ }
+    }
     return _supabaseInstance;
   }
 
@@ -855,20 +863,20 @@ async function syncToSupabase() {
       }
     }
 
-    // --- PROBE METIER (Sonde) ---
-    // Guard : ne pas tenter si le navigateur est hors-ligne
-    if (!navigator.onLine) {
-      AppState.isOnline = false;
-      return;
-    }
+    // --- PROBE MÉTIER (via client Supabase — utilise le token auth correct) ---
+    if (!navigator.onLine) { AppState.isOnline = false; return; }
     try {
-      const probeRes = await fetch(`${sb.supabaseUrl}/rest/v1/settings?select=key&limit=1`, {
-        method: 'GET',
-        headers: { 'apikey': sb.supabaseKey, 'Authorization': `Bearer ${sb.supabaseKey}` },
-        cache: 'no-store',
-        signal: AbortSignal.timeout ? AbortSignal.timeout(8000) : undefined
-      });
-      if (!probeRes.ok) throw new Error('Probe Fail');
+      const probeReq = await sb.from('settings').select('key').limit(1);
+      if (probeReq.error) {
+        // Si 401 → re-auth et retry
+        if (probeReq.error.message?.includes('401') || probeReq.error.code === 'PGRST301') {
+          try { await sb.auth.signInAnonymously(); } catch(e) {}
+          const retry = await sb.from('settings').select('key').limit(1);
+          if (retry.error) throw retry.error;
+        } else {
+          throw probeReq.error;
+        }
+      }
       AppState.isOnline = true;
     } catch (err) {
       AppState.isOnline = false;
@@ -1559,9 +1567,16 @@ window.addEventListener('error', function (event) {
 window.addEventListener('unhandledrejection', function (event) {
   var msg = String(event.reason?.message || event.reason || '');
   // Silencer TOUTES les erreurs réseau, auth, et ServiceWorker — comportement normal en PWA offline
-  if (msg.indexOf('ERR_INTERNET') !== -1 || msg.indexOf('Failed to fetch') !== -1 || msg.indexOf('NetworkError') !== -1 || msg.indexOf('net::ERR_') !== -1 || msg.indexOf('refresh_token') !== -1 || msg.indexOf('ServiceWorker') !== -1 || msg.indexOf('service worker') !== -1 || msg.indexOf('An unknown error') !== -1 || msg.indexOf('AuthRetryable') !== -1 || msg.indexOf('Lock') !== -1) {
-    event.preventDefault();
-    return;
+  var noisePatterns = [
+    'ERR_INTERNET', 'Failed to fetch', 'NetworkError', 'net::ERR_',
+    'refresh_token', 'ServiceWorker', 'service worker', 'An unknown error',
+    'AuthRetryable', 'Lock', 'AuthSessionMissing', 'Auth session missing',
+    'Unauthorized', '401', '400', 'Bad Request', 'CORS', 'AbortError',
+    'Load failed', 'The user aborted', 'CHANNEL_ERROR', 'WebSocket',
+    'signInAnonymously', 'Failed to decode'
+  ];
+  for (var i = 0; i < noisePatterns.length; i++) {
+    if (msg.indexOf(noisePatterns[i]) !== -1) { event.preventDefault(); return; }
   }
   event.preventDefault();
 });

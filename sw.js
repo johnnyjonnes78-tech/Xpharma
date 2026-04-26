@@ -3,7 +3,7 @@
  * Cache-first PWA strategy pour fonctionnement 100% offline
  */
 
-const CACHE_NAME = 'pharma-cache-v8.9.3';
+const CACHE_NAME = 'pharma-cache-v9.0.0';
 const ASSETS = [
   './',
   './index.html',
@@ -78,23 +78,21 @@ self.addEventListener('fetch', event => {
 
   // 🛡️ REQUÊTES EXTERNES (Supabase, fonts, CDN)
   if (!url.startsWith(self.location.origin)) {
-    // FONTS : cache-only pour éviter "Failed to decode" avec fausse réponse
-    // Si la font est cachée → on la sert. Sinon → on ne répond PAS (browser fallback)
+    // FONTS : cache-first, avec catch silencieux
     if (url.includes('fonts.g') || url.endsWith('.woff2') || url.endsWith('.woff') || url.endsWith('.ttf')) {
       event.respondWith(
         caches.match(event.request).then(cached => {
           if (cached) return cached;
-          // Pas en cache → essayer le réseau, cacher pour plus tard
           return fetch(event.request).then(response => {
             if (response.ok) {
               const clone = response.clone();
               caches.open(CACHE_NAME).then(c => c.put(event.request, clone));
             }
             return response;
+          }).catch(() => {
+            // Offline + font pas cachée → réponse vide (PAS font/woff2 pour éviter "Failed to decode")
+            return new Response('', { status: 200 });
           });
-          // PAS de .catch() → si offline, la promesse rejette naturellement
-          // le navigateur affiche "Failed to load resource" (capté par notre filtre)
-          // PAS de "Failed to decode" car aucune fausse réponse
         })
       );
       return;
