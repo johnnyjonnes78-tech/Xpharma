@@ -143,6 +143,77 @@ function _getBackoffDelay() {
   return delay;
 }
 
+// ═══════════════════════════════════════════════════════════════════
+// LIVE UI REFRESH ENGINE — Synchronisation visuelle temps réel
+// Rafraîchit automatiquement la page affichée quand un changement
+// arrive d'un autre appareil via Supabase Realtime ou Pull.
+// ═══════════════════════════════════════════════════════════════════
+let _uiRefreshTimer = null;
+let _pendingUIStores = new Set();
+const _recentlySyncedIds = new Map();
+
+function _markAsSynced(storeName, id) {
+  if (id == null) return;
+  _recentlySyncedIds.set(`${storeName}:${id}`, Date.now());
+}
+
+function _wasRecentlySynced(storeName, id) {
+  if (id == null) return false;
+  const key = `${storeName}:${id}`;
+  const ts = _recentlySyncedIds.get(key);
+  if (!ts) return false;
+  if (Date.now() - ts > 10000) { _recentlySyncedIds.delete(key); return false; }
+  return true;
+}
+
+// Nettoyage périodique du cache anti-écho
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, ts] of _recentlySyncedIds) {
+    if (now - ts > 15000) _recentlySyncedIds.delete(key);
+  }
+}, 30000);
+
+const _pageStoreMap = {
+  dashboard: ['sales', 'saleItems', 'stock', 'products', 'alerts', 'movements', 'returns'],
+  products: ['products'],
+  stock: ['stock', 'products', 'lots'],
+  sales: ['sales', 'saleItems'],
+  patients: ['patients'],
+  prescriptions: ['prescriptions'],
+  suppliers: ['suppliers'],
+  alerts: ['alerts'],
+  caisse: ['cashRegister', 'sales'],
+  traceability: ['movements', 'lots', 'products'],
+  returns: ['returns', 'sales'],
+  settings: ['settings', 'users'],
+  metrics: ['sales', 'saleItems', 'products', 'stock'],
+};
+
+function _notifyUIChange(storeName) {
+  _pendingUIStores.add(storeName);
+  if (_uiRefreshTimer) clearTimeout(_uiRefreshTimer);
+  _uiRefreshTimer = setTimeout(() => {
+    _uiRefreshTimer = null;
+    const stores = new Set(_pendingUIStores);
+    _pendingUIStores.clear();
+    try {
+      if (window._invalidateDashCache) window._invalidateDashCache();
+      const page = window.Router?.currentPage;
+      if (!page || page === 'login' || page === 'onboarding' || page === 'pos') return;
+      const relevantStores = _pageStoreMap[page] || [];
+      const hasRelevantChange = relevantStores.some(s => stores.has(s));
+      if (hasRelevantChange) {
+        const container = document.getElementById('app-content');
+        if (container && window.Router?.routes?.[page]) {
+          window.Router.render(page);
+          _logOnce('log', `[LiveSync] \u{1F504} Page "${page}" rafraîchie (${[...stores].join(', ')})`);
+        }
+      }
+    } catch (e) { /* silencieux */ }
+  }, 500);
+}
+
 let _lastSessionCheck = 0;
 async function getSupabaseClient() {
   // Guard strict : ne rien faire si hors-ligne
@@ -190,7 +261,7 @@ async function getSupabaseClient() {
 
       // Lancer le realtime APRÈS 10s pour laisser l'auth se stabiliser
       // Évite le warning WebSocket au démarrage
-      setTimeout(() => _setupRealtime(_supabaseInstance), 10000);
+      setTimeout(() => _setupRealtime(_supabaseInstance), 3000);
       return _supabaseInstance;
     }
   } catch (e) { /* silencieux */ }
@@ -203,7 +274,7 @@ function _setupRealtime(sbClient) {
 
   // Activer le cooldown pour éviter les boucles de reconnexion WebSocket
   _realtimeCooldown = true;
-  setTimeout(() => { _realtimeCooldown = false; }, 30000); // 30s de cooldown
+  setTimeout(() => { _realtimeCooldown = false; }, 10000); // 10s de cooldown
 
   // Mapping table Supabase → store IndexedDB
   const _tableToStore = { app_users: 'users' };
@@ -222,8 +293,13 @@ function _setupRealtime(sbClient) {
       if (!_validStores.has(storeName)) return;
 
       try {
+        // Anti-écho : ignorer les changements qu'on a nous-même envoyés
+        const _itemId = (payload.new?.id || payload.old?.id || payload.new?.key);
+        if (_wasRecentlySynced(storeName, _itemId)) return;
+
         if (eventType === 'DELETE' && payload.old?.id) {
           await dbDelete(storeName, payload.old.id);
+          _notifyUIChange(storeName);
         } else if ((eventType === 'INSERT' || eventType === 'UPDATE') && payload.new) {
           const item = { ...payload.new, _synced: true, _updatedAt: Date.now() };
 
@@ -243,6 +319,7 @@ function _setupRealtime(sbClient) {
             await _dbPutRaw(storeName, item);
             _updateCacheInPlace(storeName, [item]);
           }
+          _notifyUIChange(storeName);
         }
       } catch (err) {
         // Silencieux — le pull rattrapera
@@ -1022,6 +1099,8 @@ async function syncToSupabase() {
             for (const item of batchPending) {
               item._synced = true;
               await _dbPutRaw(storeName, item);
+              // Anti-écho : marquer pour ignorer l'événement Realtime retour
+              _markAsSynced(storeName, item.id || item.key);
             }
           }
 
@@ -1308,6 +1387,21 @@ async function pullFromSupabase(isManual = false) {
 
     if (hasChanges) console.log(`[Flash] ⚡ Pull terminé — ${totalItemsPulled} éléments mis à jour`);
 
+    // ── LIVE UI REFRESH après pull ──
+    if (hasChanges) {
+      try {
+        const page = window.Router?.currentPage;
+        if (page && page !== 'login' && page !== 'onboarding' && page !== 'pos') {
+          if (window._invalidateDashCache) window._invalidateDashCache();
+          const container = document.getElementById('app-content');
+          if (container && window.Router?.routes?.[page]) {
+            window.Router.render(page);
+            _logOnce('log', '[LiveSync] \u{1F504} Page rafraîchie après pull');
+          }
+        }
+      } catch (e) { /* silencieux */ }
+    }
+
     // ── TRACKING DU PULL POUR LE SUIVI PHARMACIEN ──
     if (isManual && totalItemsPulled > 0) {
       try {
@@ -1499,9 +1593,9 @@ function startAutoPull() {
         await pullFromSupabase();
       } catch (e) { }
     }
-    // Pull toutes les 30 min en ligne (le WebSocket gère le temps réel)
-    // Hors ligne : vérifier toutes les 15 min (économie de ressources sur le long terme)
-    const delay = (!navigator.onLine || AppState.isOnline === false) ? 900000 : 1800000;
+    // Pull toutes les 60s en ligne (filet de sécurité si le WebSocket tombe)
+    // Hors ligne : vérifier toutes les 2 min
+    const delay = (!navigator.onLine || AppState.isOnline === false) ? 120000 : 60000;
     _autoPullTimer = setTimeout(loop, delay);
   };
 
