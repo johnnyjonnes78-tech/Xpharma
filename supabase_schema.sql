@@ -864,8 +864,34 @@ ALTER TABLE prescriptions ADD COLUMN IF NOT EXISTS "validatedAt" TEXT;
 ALTER TABLE prescriptions ADD COLUMN IF NOT EXISTS "validatedBy" TEXT;
 ALTER TABLE prescriptions ADD COLUMN IF NOT EXISTS "validityDate" TEXT;
 
+ALTER PUBLICATION supabase_realtime ADD TABLE products, stock, sales, "saleItems", settings, app_users, patients, returns, "cashRegister", movements, lots, suppliers, "purchaseOrders", prescriptions, "auditLog", alerts;
+
 -- ═══════════════════════════════════════════════════════════════════════════════
--- FIN MIGRATION v9.3.3
--- Après exécution, vider le cache local sur chaque appareil :
+-- MIGRATION v9.3.5 — Colonnes manquantes + correction types
+-- ═══════════════════════════════════════════════════════════════════════════════
+
+-- ── PATIENTS : colonnes manquantes ──
+ALTER TABLE patients ADD COLUMN IF NOT EXISTS "createdAt" TEXT;
+ALTER TABLE patients ADD COLUMN IF NOT EXISTS "creditLimit" NUMERIC DEFAULT 0;
+ALTER TABLE patients ADD COLUMN IF NOT EXISTS notes TEXT;
+ALTER TABLE patients ADD COLUMN IF NOT EXISTS insurance TEXT;
+ALTER TABLE patients ADD COLUMN IF NOT EXISTS "insuranceNumber" TEXT;
+ALTER TABLE patients ADD COLUMN IF NOT EXISTS "bloodType" TEXT;
+ALTER TABLE patients ADD COLUMN IF NOT EXISTS "emergencyContact" TEXT;
+ALTER TABLE patients ADD COLUMN IF NOT EXISTS gender TEXT;
+ALTER TABLE patients ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'active';
+ALTER TABLE patients ADD COLUMN IF NOT EXISTS "medicalHistory" JSONB;
+
+-- ── PATIENTS : correction type updatedAt (BIGINT → TEXT pour accepter ISO dates) ──
+ALTER TABLE patients ALTER COLUMN "updatedAt" TYPE TEXT USING "updatedAt"::TEXT;
+
+-- ── CASHREGISTER : colonnes manquantes ──
+ALTER TABLE "cashRegister" ADD COLUMN IF NOT EXISTS "closedByRole" TEXT;
+ALTER TABLE "cashRegister" ADD COLUMN IF NOT EXISTS reference TEXT;
+ALTER TABLE "cashRegister" ADD COLUMN IF NOT EXISTS "saleId" BIGINT;
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- FIN MIGRATION v9.3.5
+-- Après exécution, vider le cache de colonnes sur chaque appareil :
 --   localStorage.removeItem('pharma_bad_columns');
 -- ═══════════════════════════════════════════════════════════════════════════════
