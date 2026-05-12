@@ -881,6 +881,7 @@ ALTER TABLE patients ADD COLUMN IF NOT EXISTS "emergencyContact" TEXT;
 ALTER TABLE patients ADD COLUMN IF NOT EXISTS gender TEXT;
 ALTER TABLE patients ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'active';
 ALTER TABLE patients ADD COLUMN IF NOT EXISTS "medicalHistory" JSONB;
+ALTER TABLE patients ADD COLUMN IF NOT EXISTS note TEXT;
 
 -- ── PATIENTS : correction type updatedAt (BIGINT → TEXT pour accepter ISO dates) ──
 ALTER TABLE patients ALTER COLUMN "updatedAt" TYPE TEXT USING "updatedAt"::TEXT;
