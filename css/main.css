@@ -10049,3 +10049,22 @@ body:has(#onboarding-container) #support-chat-fab {
   .pos-session-tabs { padding: 4px 8px; gap: 3px; }
   .pos-tab-btn { padding: 5px 8px; font-size: 11px; }
 }
+
+/* --- PHASE 4 : Onglets 360 Patient --- */
+.patient360-tab {
+  padding: 8px 16px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s;
+}
+.patient360-tab:hover { color: var(--text); }
+.patient360-tab.active {
+  color: var(--primary);
+  border-bottom-color: var(--primary);
+}
+

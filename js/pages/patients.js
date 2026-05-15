@@ -114,18 +114,28 @@ function calcAge(dob) {
 }
 
 async function viewPatient(patientId) {
-  const [patient, prescriptions, saleItems] = await Promise.all([
+  const [patient, prescriptions, allSales] = await Promise.all([
     DB.dbGet('patients', patientId),
-    DB.dbGetAll('prescriptions', 'patientId', patientId),
-    DB.dbGetAll('saleItems'),
+    DB.dbGetAll('prescriptions'),
+    DB.dbGetAll('sales'),
   ]);
   if (!patient) return;
 
-  const sortedRx = prescriptions.sort((a, b) => new Date(b.date) - new Date(a.date));
+  // Filtrer les ventes de ce patient
+  const patientSales = allSales.filter(s => s.patientId === patientId || s.patientName === patient.name);
+  const patientRx = prescriptions.filter(r => r.patientId === patientId);
+  const sortedRx = patientRx.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+  // KPIs financiers
+  const totalSpent = patientSales.reduce((sum, s) => sum + (s.total || 0), 0);
+  const avgBasket = patientSales.length > 0 ? Math.round(totalSpent / patientSales.length) : 0;
+  const lastVisitDate = patientSales.length > 0 ? patientSales.sort((a,b) => new Date(b.date) - new Date(a.date))[0].date : null;
+  const creditSales = patientSales.filter(s => s.paymentMethod === 'credit' && s.creditStatus !== 'paid');
+  const totalCredit = creditSales.reduce((sum, s) => sum + (s.total || 0), 0);
 
   // Drug history from prescriptions
   const drugHistory = {};
-  prescriptions.forEach(rx => {
+  patientRx.forEach(rx => {
     (rx.items || []).forEach(item => {
       if (!drugHistory[item.productName]) drugHistory[item.productName] = { count: 0, lastDate: null };
       drugHistory[item.productName].count++;
@@ -160,52 +170,118 @@ async function viewPatient(patientId) {
         </div>
       </div>
 
-      <div class="patient-stats-row">
+      <!-- KPIs 360° -->
+      <div class="patient-stats-row" style="grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));">
         <div class="patient-stat-card">
-          <div class="patient-stat-val">${prescriptions.length}</div>
+          <div class="patient-stat-val kpi-value">${UI.formatCurrency(totalSpent)}</div>
+          <div class="patient-stat-label">Total dépensé</div>
+        </div>
+        <div class="patient-stat-card">
+          <div class="patient-stat-val kpi-value">${patientSales.length}</div>
+          <div class="patient-stat-label">Visites</div>
+        </div>
+        <div class="patient-stat-card">
+          <div class="patient-stat-val kpi-value">${UI.formatCurrency(avgBasket)}</div>
+          <div class="patient-stat-label">Panier moyen</div>
+        </div>
+        <div class="patient-stat-card">
+          <div class="patient-stat-val">${lastVisitDate ? UI.formatDate(lastVisitDate) : '—'}</div>
+          <div class="patient-stat-label">Dernière visite</div>
+        </div>
+        ${totalCredit > 0 ? `<div class="patient-stat-card" style="border-color:var(--danger);">
+          <div class="patient-stat-val kpi-value" style="color:var(--danger)">${UI.formatCurrency(totalCredit)}</div>
+          <div class="patient-stat-label">Crédit en cours</div>
+        </div>` : ''}
+        <div class="patient-stat-card">
+          <div class="patient-stat-val">${patientRx.length}</div>
           <div class="patient-stat-label">Ordonnances</div>
         </div>
-        <div class="patient-stat-card">
-          <div class="patient-stat-val">${prescriptions.filter(r => r.status === 'dispensed').length}</div>
-          <div class="patient-stat-label">Dispensées</div>
-        </div>
-        <div class="patient-stat-card">
-          <div class="patient-stat-val">${topDrugs.length}</div>
-          <div class="patient-stat-label">Médicaments utilisés</div>
-        </div>
       </div>
 
-      ${topDrugs.length > 0 ? `
-        <div class="patient-drugs-section">
-          <h4><i data-lucide="pill"></i> Médicaments fréquents</h4>
-          <div class="drugs-grid">
-            ${topDrugs.map(([name, data]) => `
-              <div class="drug-chip">
-                <span class="drug-name">${name}</span>
-                <span class="drug-count">${data.count}x</span>
-              </div>`).join('')}
-          </div>
-        </div>` : ''}
+      <!-- Onglets -->
+      <div style="margin-top:16px;">
+        <div class="patient360-tabs" style="display:flex;gap:4px;border-bottom:2px solid var(--border);margin-bottom:12px;">
+          <button class="patient360-tab active" onclick="document.querySelectorAll('.p360-panel').forEach(e=>e.style.display='none');document.getElementById('p360-summary').style.display='';document.querySelectorAll('.patient360-tab').forEach(e=>e.classList.remove('active'));this.classList.add('active')">Résumé</button>
+          <button class="patient360-tab" onclick="document.querySelectorAll('.p360-panel').forEach(e=>e.style.display='none');document.getElementById('p360-purchases').style.display='';document.querySelectorAll('.patient360-tab').forEach(e=>e.classList.remove('active'));this.classList.add('active')">Achats (${patientSales.length})</button>
+          ${totalCredit > 0 ? `<button class="patient360-tab" onclick="document.querySelectorAll('.p360-panel').forEach(e=>e.style.display='none');document.getElementById('p360-credits').style.display='';document.querySelectorAll('.patient360-tab').forEach(e=>e.classList.remove('active'));this.classList.add('active')" style="color:var(--danger)">Crédits (${creditSales.length})</button>` : ''}
+          <button class="patient360-tab" onclick="document.querySelectorAll('.p360-panel').forEach(e=>e.style.display='none');document.getElementById('p360-rx').style.display='';document.querySelectorAll('.patient360-tab').forEach(e=>e.classList.remove('active'));this.classList.add('active')">Ordonnances (${patientRx.length})</button>
+        </div>
 
-      <div class="patient-rx-history">
-        <h4><i data-lucide="file-text"></i> Historique des Ordonnances</h4>
-        ${sortedRx.length === 0 ? '<p class="text-muted">Aucune ordonnance enregistrée</p>' : `
+        <!-- Panel Résumé -->
+        <div id="p360-summary" class="p360-panel">
+          ${topDrugs.length > 0 ? `
+            <div class="patient-drugs-section">
+              <h4><i data-lucide="pill"></i> Médicaments fréquents</h4>
+              <div class="drugs-grid">
+                ${topDrugs.map(([name, data]) => `
+                  <div class="drug-chip">
+                    <span class="drug-name">${name}</span>
+                    <span class="drug-count">${data.count}x</span>
+                  </div>`).join('')}
+              </div>
+            </div>` : '<p class="text-muted">Aucun médicament récurrent enregistré</p>'}
+          ${patient.medicalHistory ? `<div style="margin-top:12px;padding:10px;background:var(--surface-2);border-radius:8px;"><strong style="font-size:12px;color:var(--text-muted)">Antécédents médicaux</strong><p style="margin:4px 0 0;font-size:13px;">${patient.medicalHistory}</p></div>` : ''}
+          ${patient.note ? `<div class="patient-note"><h4><i data-lucide="file-edit"></i> Notes</h4><p>${patient.note}</p></div>` : ''}
+        </div>
+
+        <!-- Panel Achats -->
+        <div id="p360-purchases" class="p360-panel" style="display:none;">
+          ${patientSales.length === 0 ? '<p class="text-muted">Aucun achat enregistré</p>' : `
+            <table class="data-table">
+              <thead><tr><th>Date</th><th>Montant</th><th>Paiement</th><th>Articles</th><th>Vendeur</th></tr></thead>
+              <tbody>
+                ${patientSales.sort((a,b) => new Date(b.date) - new Date(a.date)).slice(0, 30).map(s => `
+                  <tr>
+                    <td>${UI.formatDate(s.date)}</td>
+                    <td><strong>${UI.formatCurrency(s.total || 0)}</strong></td>
+                    <td><span class="badge badge-${s.paymentMethod === 'credit' ? 'danger' : s.paymentMethod === 'cash' ? 'success' : 'info'}">${s.paymentMethod || 'Espèces'}</span></td>
+                    <td>${(s.items || []).slice(0,2).map(i => i.productName || i.name || '').join(', ')}${(s.items||[]).length > 2 ? '...' : ''}</td>
+                    <td class="text-muted text-sm">${s.sellerName || '—'}</td>
+                  </tr>`).join('')}
+              </tbody>
+            </table>
+            ${patientSales.length > 30 ? `<p class="text-muted text-sm" style="margin-top:8px">Affichage limité aux 30 derniers achats</p>` : ''}
+          `}
+        </div>
+
+        <!-- Panel Crédits -->
+        ${totalCredit > 0 ? `<div id="p360-credits" class="p360-panel" style="display:none;">
+          <div style="padding:12px;background:rgba(214,59,59,0.06);border-radius:8px;margin-bottom:12px;border-left:3px solid var(--danger);">
+            <strong style="color:var(--danger)">Encours total : ${UI.formatCurrency(totalCredit)}</strong>
+            <span class="text-muted text-sm"> — ${creditSales.length} vente(s) à crédit non réglée(s)</span>
+          </div>
           <table class="data-table">
-            <thead><tr><th>N° Rx</th><th>Date</th><th>Médecin</th><th>Médicaments</th><th>Statut</th></tr></thead>
+            <thead><tr><th>Date</th><th>Montant</th><th>Articles</th><th>Statut</th></tr></thead>
             <tbody>
-              ${sortedRx.slice(0, 10).map(rx => `
+              ${creditSales.sort((a,b) => new Date(b.date) - new Date(a.date)).map(s => `
                 <tr>
-                  <td><code class="code-tag">Rx-${String(rx.id).padStart(5, '0')}</code></td>
-                  <td>${UI.formatDate(rx.date)}</td>
-                  <td>${rx.doctorName || '—'}</td>
-                  <td>${(rx.items || []).slice(0, 2).map(i => i.productName).join(', ')}${(rx.items || []).length > 2 ? '...' : ''}</td>
-                  <td><span class="badge badge-${rx.status === 'dispensed' ? 'success' : 'warning'}">${rx.status}</span></td>
+                  <td>${UI.formatDate(s.date)}</td>
+                  <td><strong style="color:var(--danger)">${UI.formatCurrency(s.total || 0)}</strong></td>
+                  <td>${(s.items || []).slice(0,2).map(i => i.productName || i.name || '').join(', ')}</td>
+                  <td><span class="badge badge-warning">${s.creditStatus || 'En attente'}</span></td>
                 </tr>`).join('')}
             </tbody>
-          </table>`}
-      </div>
+          </table>
+        </div>` : ''}
 
-      ${patient.note ? `<div class="patient-note"><h4><i data-lucide="file-edit"></i> Notes</h4><p>${patient.note}</p></div>` : ''}
+        <!-- Panel Ordonnances -->
+        <div id="p360-rx" class="p360-panel" style="display:none;">
+          ${sortedRx.length === 0 ? '<p class="text-muted">Aucune ordonnance enregistrée</p>' : `
+            <table class="data-table">
+              <thead><tr><th>N° Rx</th><th>Date</th><th>Médecin</th><th>Médicaments</th><th>Statut</th></tr></thead>
+              <tbody>
+                ${sortedRx.slice(0, 15).map(rx => `
+                  <tr>
+                    <td><code class="code-tag">Rx-${String(rx.id).padStart(5, '0')}</code></td>
+                    <td>${UI.formatDate(rx.date)}</td>
+                    <td>${rx.doctorName || '—'}</td>
+                    <td>${(rx.items || []).slice(0, 2).map(i => i.productName).join(', ')}${(rx.items || []).length > 2 ? '...' : ''}</td>
+                    <td><span class="badge badge-${rx.status === 'dispensed' ? 'success' : 'warning'}">${rx.status}</span></td>
+                  </tr>`).join('')}
+              </tbody>
+            </table>`}
+        </div>
+      </div>
 
       <div class="patient-legal-footer">
         <span class="text-muted text-sm"><i data-lucide="lock"></i> Données confidentielles — Accès tracé — Conservation conforme DNPM</span>
@@ -213,6 +289,7 @@ async function viewPatient(patientId) {
     </div>
   `, { size: 'large' });
   if (window.lucide) lucide.createIcons();
+  if (window._autoAnimateKPIValues) setTimeout(_autoAnimateKPIValues, 100);
   // Log access to patient data
   await DB.writeAudit('VIEW_PATIENT', 'patients', patientId, { patientName: patient.name });
 }
