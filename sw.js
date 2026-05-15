@@ -34,6 +34,7 @@ const ASSETS = [
   './js/pages/print.js',
   './js/ui/command-palette.js',
   './js/ui/feedback.js',
+  './js/utils/animations.js',
   './js/components/supportWidget.js',
   './js/vendor/lucide.min.js',
   './js/vendor/supabase.min.js',

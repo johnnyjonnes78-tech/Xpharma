@@ -19,6 +19,7 @@ async function renderDashboard(container) {
     container.innerHTML = _dashCache.html;
     _drawCharts(_dashCache.chartData);
     if (window.lucide) lucide.createIcons();
+    if (window.animateAllKPIs) setTimeout(animateAllKPIs, 100);
 
     // Si le cache est frais (< TTL), on s'arrête là
     if (Date.now() - _dashCache.ts < _dashCache.TTL) return;
@@ -137,7 +138,7 @@ async function _refreshDashboard(container) {
         <div class="kpi-card kpi-blue">
           <div class="kpi-icon"><i data-lucide="banknote"></i></div>
           <div class="kpi-content">
-            <div class="kpi-value">${UI.formatCurrency(todayRevenue)}</div>
+            <div class="kpi-value" data-animate-value="${todayRevenue}" data-suffix=" ${DB.AppState.settings?.currency || 'GNF'}">0</div>
             <div class="kpi-label">Ventes Aujourd'hui</div>
             <div class="kpi-sub">${todaySales.length} transactions</div>
           </div>
@@ -145,7 +146,7 @@ async function _refreshDashboard(container) {
         <div class="kpi-card kpi-green">
           <div class="kpi-icon"><i data-lucide="trending-up"></i></div>
           <div class="kpi-content">
-            <div class="kpi-value">${UI.formatCurrency(monthRevenue)}</div>
+            <div class="kpi-value" data-animate-value="${monthRevenue}" data-suffix=" ${DB.AppState.settings?.currency || 'GNF'}">0</div>
             <div class="kpi-label">CA du Mois</div>
             <div class="kpi-sub">${DB.AppState.currentUser?.role !== 'caissier' ? `Marge : ${marginPct}%` : 'Performance mensuelle'}</div>
           </div>
@@ -153,7 +154,7 @@ async function _refreshDashboard(container) {
         <div class="kpi-card kpi-orange ${lowStockProducts.length > 0 ? 'kpi-alert' : ''}">
           <div class="kpi-icon"><i data-lucide="package"></i></div>
           <div class="kpi-content">
-            <div class="kpi-value">${productCount}</div>
+            <div class="kpi-value" data-animate-value="${productCount}">0</div>
             <div class="kpi-label">Produits Actifs</div>
             <div class="kpi-sub">${lowStockProducts.length} en stock bas</div>
           </div>
@@ -161,7 +162,7 @@ async function _refreshDashboard(container) {
         <div class="kpi-card kpi-red ${unreadAlerts.length > 0 ? 'kpi-alert' : ''}">
           <div class="kpi-icon"><i data-lucide="bell"></i></div>
           <div class="kpi-content">
-            <div class="kpi-value">${unreadAlerts.length}</div>
+            <div class="kpi-value" data-animate-value="${unreadAlerts.length}">0</div>
             <div class="kpi-label">Alertes Actives</div>
             <div class="kpi-sub">À traiter rapidement</div>
           </div>
@@ -274,6 +275,8 @@ async function _refreshDashboard(container) {
       container.innerHTML = html;
       _drawCharts(chartData);
       if (window.lucide) lucide.createIcons();
+      // Phase 1 v9.4 — Animations KPI count-up
+      if (window.animateAllKPIs) setTimeout(animateAllKPIs, 100);
     }
 
   } catch (err) {
