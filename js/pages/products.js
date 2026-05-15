@@ -159,13 +159,20 @@ async function viewProduct(id) {
   `, { size: 'medium' });
 }
 
-// Catégories médicaments + parapharmacie
+// Catégories médicaments + parapharmacie (Phase 2 v9.4 — 55+ catégories)
 const _PHARMA_CATEGORIES = [
-  { group: 'Médicaments', items: ['Antalgique', 'Antibiotique', 'Anti-inflammatoire', 'Antidiabétique', 'Antipaludique', 'Antihypertenseur', 'Antihistaminique', 'Gastroprotecteur', 'Hématologie', 'Réhydratation', 'Vitamine', 'Dermatologie', 'Ophtalmologie'] },
-  { group: 'Parapharmacie', items: ['Parfumerie & Cosmétique', 'Hygiène & Soins', 'Huiles & Compléments', 'Nutrition & Diététique', 'Bébé & Maternité', 'Matériel Médical', 'Accessoires'] },
+  { group: 'Médicaments — Système Nerveux', items: ['Antalgique', 'Anti-inflammatoire', 'Antipyrétique', 'Anxiolytique', 'Antidépresseur', 'Antiépileptique', 'Neuroleptique', 'Myorelaxant', 'Anesthésique local'] },
+  { group: 'Médicaments — Infectiologie', items: ['Antibiotique', 'Antiviral', 'Antifongique', 'Antiparasitaire', 'Antipaludique', 'Antituberculeux', 'Antiseptique'] },
+  { group: 'Médicaments — Cardio & Vasculaire', items: ['Antihypertenseur', 'Antiarythmique', 'Anticoagulant', 'Vasodilatateur', 'Hypolipémiant', 'Diurétique', 'Veinotonique'] },
+  { group: 'Médicaments — Métabolisme', items: ['Antidiabétique', 'Thyroïdien', 'Corticostéroïde', 'Hormone'] },
+  { group: 'Médicaments — Appareil Digestif', items: ['Gastroprotecteur', 'Antiacide', 'Antiémétique', 'Laxatif', 'Antidiarrhéique', 'Antispasmodique', 'Hépatoprotecteur'] },
+  { group: 'Médicaments — Appareil Respiratoire', items: ['Antitussif', 'Expectorant', 'Bronchodilatateur', 'Antihistaminique', 'Décongestionnant'] },
+  { group: 'Médicaments — Spécialités', items: ['Ophtalmologie', 'ORL', 'Dermatologie', 'Urologie', 'Gynécologie', 'Rhumatologie', 'Hématologie', 'Oncologie'] },
+  { group: 'Médicaments — Autres', items: ['Vitamine', 'Complément alimentaire', 'Réhydratation', 'Vaccin', 'Sérum', 'Anti-allergie'] },
+  { group: 'Parapharmacie', items: ['Parfumerie & Cosmétique', 'Hygiène & Soins', 'Huiles & Compléments', 'Nutrition & Diététique', 'Bébé & Maternité', 'Matériel Médical', 'Accessoires', 'Orthopédie', 'Optique & Lunetterie', 'Aromathérapie', 'Phytothérapie', 'Bien-être & Relaxation'] },
   { group: 'Autre', items: ['Autre'] }
 ];
-const _PARA_CATEGORIES = ['Parfumerie & Cosmétique', 'Hygiène & Soins', 'Huiles & Compléments', 'Nutrition & Diététique', 'Bébé & Maternité', 'Matériel Médical', 'Accessoires'];
+const _PARA_CATEGORIES = ['Parfumerie & Cosmétique', 'Hygiène & Soins', 'Huiles & Compléments', 'Nutrition & Diététique', 'Bébé & Maternité', 'Matériel Médical', 'Accessoires', 'Orthopédie', 'Optique & Lunetterie', 'Aromathérapie', 'Phytothérapie', 'Bien-être & Relaxation'];
 
 function _buildCategoryOptions(selected) {
   return _PHARMA_CATEGORIES.map(g =>
@@ -173,6 +180,22 @@ function _buildCategoryOptions(selected) {
     g.items.map(c => '<option value="' + c + '"' + (c === selected ? ' selected' : '') + '>' + c + '</option>').join('') +
     '</optgroup>'
   ).join('');
+}
+
+// Datalist pour input libre avec autocomplétion
+function _buildCategoryDatalist(listId) {
+  var opts = [];
+  _PHARMA_CATEGORIES.forEach(function(g) {
+    g.items.forEach(function(c) { opts.push('<option value="' + c + '">'); });
+  });
+  return '<datalist id="' + listId + '">' + opts.join('') + '</datalist>';
+}
+
+function _buildCategoryInput(formId, selected, listId) {
+  return '<input type="text" name="category" class="form-control" value="' + (selected || '') + '"' +
+    ' list="' + listId + '" placeholder="Choisir ou saisir..." required' +
+    ' oninput="_onCategoryChange(\'' + formId + '\')">' +
+    _buildCategoryDatalist(listId);
 }
 
 function _onCategoryChange(formId) {
@@ -239,10 +262,7 @@ async function showAddProduct() {
       <div class="form-row">
         <div class="form-group">
           <label>Catégorie *</label>
-          <select name="category" class="form-control" required onchange="_onCategoryChange('product-form')">
-            <option value="">Choisir...</option>
-            ${_buildCategoryOptions('')}
-          </select>
+          ${_buildCategoryInput('product-form', '', 'cat-list-add')}
         </div>
         <div class="form-group rx-group">
           <label>Statut</label>
@@ -438,9 +458,7 @@ async function editProductForm(id) {
       <div class="form-row">
         <div class="form-group">
           <label>Catégorie *</label>
-          <select name="category" class="form-control" required onchange="_onCategoryChange('edit-product-form')">
-            ${_buildCategoryOptions(p.category)}
-          </select>
+          ${_buildCategoryInput('edit-product-form', p.category, 'cat-list-edit')}
         </div>
         <div class="form-group rx-group" style="display:${isPara ? 'none' : ''}">
           <label>Statut</label>
@@ -643,6 +661,7 @@ window.deleteProduct = deleteProduct;
 window.exportProducts = exportProducts;
 window._onCategoryChange = _onCategoryChange;
 window._buildCategoryOptions = _buildCategoryOptions;
+window._buildCategoryInput = _buildCategoryInput;
 
 /* ── Bulk Import Logic ── */
 
