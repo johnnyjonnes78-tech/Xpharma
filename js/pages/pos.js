@@ -587,6 +587,10 @@ function renderFullPOSUI(container) {
     posCart = window._heldCart.items;
     posCurrentPatient = window._heldCart.patient;
     posCurrentRx = window._heldCart.rx;
+    // Double traçabilité : sauvegarder le préparateur original
+    if (window._heldCart.preparerId && window._heldCart.preparerId !== DB.AppState.currentUser?.id) {
+      window._heldCartPreparer = { id: window._heldCart.preparerId, name: window._heldCart.preparerName };
+    }
     window._heldCart = null;
     refreshCartUI();
     if (posCurrentPatient) renderClientBadge(posCurrentPatient);
@@ -976,6 +980,7 @@ function viderPanier() {
   posCart = [];
   clearClientUI();
   detachRx();
+  window._heldCartPreparer = null; // Reset double traçabilité
   const rt = document.getElementById('rx-toggle');
   if (rt) { rt.checked = false; onRxToggle(false); }
   const disc = document.getElementById('pos-discount');
@@ -1650,7 +1655,13 @@ async function attachRx(rxId) {
 
 function mettreEnAttente() {
   if (!posCart.length) { UI.toast('Panier vide', 'warning'); return; }
-  window._heldCart = { items: [...posCart], patient: posCurrentPatient, rx: posCurrentRx };
+  window._heldCart = {
+    items: [...posCart],
+    patient: posCurrentPatient,
+    rx: posCurrentRx,
+    preparerId: DB.AppState.currentUser?.id || null,
+    preparerName: DB.AppState.currentUser?.name || null
+  };
   viderPanier();
   UI.toast('Panier mis en attente — Il sera restauré à votre retour', 'info', 5000);
 }
@@ -1881,6 +1892,8 @@ async function validerVente() {
       patientPhone: posCurrentPatient?.phone || null,
       userId: DB.AppState.currentUser?.id,
       sellerName: DB.AppState.currentUser?.name || 'Vendeur inconnu',
+      preparerId: window._heldCartPreparer?.id || DB.AppState.currentUser?.id || null,
+      preparerName: window._heldCartPreparer?.name || null,
       total, subtotal: sub, discount: disc,
       paymentMethod: method,
       paymentDetails: combinedDetails,
@@ -2114,6 +2127,7 @@ async function afficherRecu(saleId, items, saleData) {
         <div class="recu-tx-block recu-tx-caissier">
           <div class="recu-tx-label">CAISSIER</div>
           <div class="recu-tx-name">${saleData.sellerName || DB.AppState.currentUser?.name || '—'}</div>
+          ${saleData.preparerName && saleData.preparerName !== saleData.sellerName ? `<div class="recu-tx-sub" style="margin-top:4px"><strong>Préparateur :</strong> ${saleData.preparerName}</div>` : ''}
         </div>
         ${saleData.prescriptionRef ? `
         <div class="recu-tx-block recu-tx-rx">

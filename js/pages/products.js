@@ -4,7 +4,24 @@
 
 async function renderProducts(container) {
   UI.loading(container, 'Chargement des produits...');
-  const products = await DB.dbGetAll('products');
+  const [products, stockData] = await Promise.all([
+    DB.dbGetAll('products'),
+    DB.dbGetAll('stock'),
+  ]);
+
+  // KPIs Inventaire — calcul local
+  const stockMap = {};
+  stockData.forEach(s => { stockMap[s.productId] = s.quantity || 0; });
+  let valAchat = 0, valVente = 0, rupture = 0;
+  products.forEach(p => {
+    const qty = stockMap[p.id] || 0;
+    const pa = parseFloat(p.purchasePrice || p.prixAchat || 0);
+    const pv = parseFloat(p.price || p.prixVente || 0);
+    valAchat += pa * qty;
+    valVente += pv * qty;
+    if (qty <= 0) rupture++;
+  });
+  const profit = valVente - valAchat;
 
   container.innerHTML = `
     <div class="page-header">
@@ -18,6 +35,27 @@ async function renderProducts(container) {
         <button class="btn btn-primary" onclick="showAddProduct()"><i data-lucide="plus"></i> Nouveau Produit</button>
       </div>
     </div>
+
+    <!-- Dashboard Inventaire KPIs -->
+    <div class="kpi-grid" style="grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); margin-bottom: 16px;">
+      <div class="kpi-card">
+        <div class="kpi-icon" style="background:rgba(46,134,193,0.1);color:#2E86C1"><i data-lucide="package"></i></div>
+        <div class="kpi-info"><div class="kpi-value">${UI.formatCurrency(valAchat)}</div><div class="kpi-label">Valeur Stock (Achat)</div></div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-icon" style="background:rgba(30,132,73,0.1);color:#1E8449"><i data-lucide="banknote"></i></div>
+        <div class="kpi-info"><div class="kpi-value">${UI.formatCurrency(valVente)}</div><div class="kpi-label">Valeur Stock (Vente)</div></div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-icon" style="background:rgba(142,68,173,0.1);color:#8E44AD"><i data-lucide="trending-up"></i></div>
+        <div class="kpi-info"><div class="kpi-value">${UI.formatCurrency(profit)}</div><div class="kpi-label">Profit Potentiel</div></div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-icon" style="background:${rupture > 0 ? 'rgba(214,59,59,0.1)' : 'rgba(30,132,73,0.1)'};color:${rupture > 0 ? '#D63B3B' : '#1E8449'}"><i data-lucide="alert-circle"></i></div>
+        <div class="kpi-info"><div class="kpi-value" style="color:${rupture > 0 ? 'var(--danger)' : 'inherit'}">${rupture}</div><div class="kpi-label">En Rupture</div></div>
+      </div>
+    </div>
+
     <div class="filter-bar">
       <input type="text" id="prod-search" placeholder="Rechercher..." class="filter-input" oninput="filterProducts()">
       <select id="prod-cat" class="filter-select" onchange="filterProducts()">
@@ -36,6 +74,7 @@ async function renderProducts(container) {
   window._productsData = products;
   renderProductsTable(products);
   if (window.lucide) lucide.createIcons();
+  if (window._autoAnimateKPIValues) setTimeout(_autoAnimateKPIValues, 100);
 }
 
 function filterProducts() {
