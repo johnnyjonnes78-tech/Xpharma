@@ -1,5 +1,5 @@
-/**
- * OrdiveX — Module de Stabilite v9.4.2
+﻿/**
+ * OrdiveX — Module de Stabilite v9.4.3
  * Bouclier d'erreurs global + Verification de version + Auto-recovery
  * Ce fichier DOIT etre charge en DERNIER pour wrapper tous les modules
  */
@@ -501,7 +501,7 @@
     setTimeout(_memoryWatchdog, 60000); // 1 min apres le chargement
     setInterval(_memoryWatchdog, 30 * 60 * 1000);
 
-    console.log('[Stability] Bouclier de stabilite v9.4.2 active — ' + new Date().toLocaleTimeString('fr-FR'));
+    console.log('[Stability] Bouclier de stabilite v9.4.3 active — ' + new Date().toLocaleTimeString('fr-FR'));
   }
 
   // Demarrer une fois le DOM pret

@@ -213,18 +213,36 @@ function _notifyUIChange(storeName) {
     try {
       if (window._invalidateDashCache) window._invalidateDashCache();
       const page = window.Router?.currentPage;
+      // Ne jamais rafraîchir les pages sensibles
       if (!page || page === 'login' || page === 'onboarding' || page === 'pos') return;
       const relevantStores = _pageStoreMap[page] || [];
       const hasRelevantChange = relevantStores.some(s => stores.has(s));
       if (hasRelevantChange) {
-        const container = document.getElementById('app-content');
-        if (container && window.Router?.routes?.[page]) {
-          window.Router.render(page);
-          _logOnce('log', `[LiveSync] \u{1F504} Page "${page}" rafraîchie (${[...stores].join(', ')})`);
-        }
+        _silentRefreshPage(page, [...stores]);
       }
     } catch (e) { /* silencieux */ }
-  }, 500);
+  }, 1500);
+}
+
+// Rafraîchissement silencieux : aucun flash visible pour l'utilisateur
+function _silentRefreshPage(page, storeNames) {
+  try {
+    const container = document.getElementById('app-content');
+    if (!container || !window.Router?.routes?.[page]) return;
+    // Empêcher le scroll reset et le flash
+    const scrollY = container.scrollTop || 0;
+    const scrollX = container.scrollLeft || 0;
+    // Verrouiller la hauteur du container pendant le render
+    container.style.minHeight = container.offsetHeight + 'px';
+    // Render dans le DOM existant (Router.render écrase innerHTML)
+    window.Router.render(page);
+    // Restaurer le scroll
+    requestAnimationFrame(() => {
+      container.scrollTop = scrollY;
+      container.scrollLeft = scrollX;
+      container.style.minHeight = '';
+    });
+  } catch (e) { /* silencieux */ }
 }
 
 let _lastSessionCheck = 0;
@@ -1132,6 +1150,7 @@ async function syncToSupabase() {
             lots: ['productionDate', 'manufactureDate', 'supplier'],
             stock: ['lastUpdate', 'minQuantity'],
             prescriptions: ['note'],  // Supabase a 'notes' (avec s), pas 'note'
+            suppliers: ['complaints'],  // complaints stockées localement uniquement
           };
           const localOnly = _localOnlyColumns[storeName];
           if (localOnly) {
@@ -1577,17 +1596,13 @@ async function pullFromSupabase(isManual = false) {
 
     if (hasChanges) console.log(`[Flash] ⚡ Pull terminé — ${totalItemsPulled} éléments mis à jour`);
 
-    // ── LIVE UI REFRESH après pull ──
+    // ── LIVE UI REFRESH après pull (silencieux, sans flash) ──
     if (hasChanges) {
       try {
         const page = window.Router?.currentPage;
         if (page && page !== 'login' && page !== 'onboarding' && page !== 'pos' && page !== 'settings') {
           if (window._invalidateDashCache) window._invalidateDashCache();
-          const container = document.getElementById('app-content');
-          if (container && window.Router?.routes?.[page]) {
-            window.Router.render(page);
-            _logOnce('log', '[LiveSync] \u{1F504} Page rafraîchie après pull');
-          }
+          _silentRefreshPage(page, []);
         }
       } catch (e) { /* silencieux */ }
     }

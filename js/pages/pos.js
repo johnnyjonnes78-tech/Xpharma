@@ -2261,8 +2261,8 @@ async function afficherRecu(saleId, items, saleData) {
     </div>
 
     <div class="recu-actions" id="recu-actions">
+      <button class="btn btn-primary" onclick="PrintEngine ? PrintEngine.printInvoice(${saleId}) : UI.toast('Module impression non chargé','warning')">📄 Imprimer Facture A4</button>
       <button class="btn btn-ghost" onclick="imprimerTicket()">🖨️ Ticket thermique</button>
-      <button class="btn btn-secondary" onclick="PrintEngine ? PrintEngine.printInvoice(${saleId}) : UI.toast('Module impression non chargé','warning')">📄 Facture A4</button>
       ${saleData.mmPhone ? `<button class="btn btn-info" onclick="MobileMoneyGateway.sendSMSReceipt('${saleData.mmPhone}','${saleData.paymentMethod}',${saleData.total},${saleId}).then(()=>UI.toast('📱 SMS envoyé','success'))">📱 Renvoyer SMS</button>` : ''}
       <button class="btn btn-primary" onclick="UI.closeModal()">✓ Fermer</button>
     </div>
