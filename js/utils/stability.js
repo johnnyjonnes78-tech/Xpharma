@@ -388,20 +388,99 @@
   };
 
   // ═══════════════════════════════════════════════════════════════════
+  // 10. SAFE JSON — Parse qui ne crashe jamais
+  // ═══════════════════════════════════════════════════════════════════
+
+  window.safeJSON = function(str, fallback) {
+    if (fallback === undefined) fallback = null;
+    if (!str || typeof str !== 'string') return fallback;
+    try { return JSON.parse(str); } catch(e) { return fallback; }
+  };
+
+  // ═══════════════════════════════════════════════════════════════════
+  // 11. ASYNC RENDER PROTECTION — Wrappe les render* async des pages
+  // ═══════════════════════════════════════════════════════════════════
+
+  function _wrapAsyncRenders() {
+    if (!window.Router || !Router.routes) return;
+    var _wrapped = {};
+    Object.keys(Router.routes).forEach(function(page) {
+      var origFn = Router.routes[page];
+      if (typeof origFn !== 'function' || _wrapped[page]) return;
+      _wrapped[page] = true;
+      Router.routes[page] = async function(container) {
+        try {
+          await origFn(container);
+        } catch(err) {
+          console.error('[Stability] Page "' + page + '" async error:', err);
+          if (container) {
+            container.innerHTML =
+              '<div style="padding:60px 20px;text-align:center">' +
+              '<div style="font-size:48px;margin-bottom:16px">⚠️</div>' +
+              '<h2 style="color:var(--text);margin-bottom:8px">Erreur sur la page ' + page + '</h2>' +
+              '<p style="color:var(--text-muted);margin-bottom:20px">' + (err?.message || 'Erreur inconnue').substring(0, 150) + '</p>' +
+              '<button class="btn btn-primary" onclick="Router.navigate(\'dashboard\')">Tableau de bord</button>' +
+              ' <button class="btn btn-secondary" onclick="location.reload()">Recharger</button>' +
+              '</div>';
+          }
+        }
+      };
+    });
+  }
+
+  // ═══════════════════════════════════════════════════════════════════
+  // 12. SAFE NUMBERS — Protections contre NaN, Infinity, division/0
+  // ═══════════════════════════════════════════════════════════════════
+
+  window.safeDiv = function(a, b, decimals) {
+    if (!b || b === 0 || isNaN(a) || isNaN(b)) return 0;
+    var result = a / b;
+    if (!isFinite(result)) return 0;
+    return decimals !== undefined ? parseFloat(result.toFixed(decimals)) : result;
+  };
+
+  window.safeNum = function(val, fallback) {
+    if (fallback === undefined) fallback = 0;
+    var n = parseFloat(val);
+    return isNaN(n) || !isFinite(n) ? fallback : n;
+  };
+
+  // ═══════════════════════════════════════════════════════════════════
+  // 13. ONLINE/OFFLINE INDICATOR — Feedback visuel reseau
+  // ═══════════════════════════════════════════════════════════════════
+
+  function _setupNetworkIndicator() {
+    window.addEventListener('offline', function() {
+      if (window.UI && UI.toast) {
+        UI.toast('Connexion perdue. L\'app fonctionne hors-ligne.', 'warning', 5000);
+      }
+    });
+    window.addEventListener('online', function() {
+      if (window.UI && UI.toast) {
+        UI.toast('Connexion retablie.', 'success', 3000);
+      }
+    });
+  }
+
+  // ═══════════════════════════════════════════════════════════════════
   // INIT — Activer toutes les protections
   // ═══════════════════════════════════════════════════════════════════
 
   function _initStability() {
     _wrapRouter();
     _wrapDBOperations();
+    _wrapAsyncRenders();
     _cleanStaleSW();
     _injectNaomieVersionCheck();
+    _setupNetworkIndicator();
 
     // Proteger les fonctions onclick globales critiques
     var criticalFns = [
       'submitProduct', 'updateProduct', 'submitUser', 'updateUser',
       'saveSettings', 'doBackup', 'restoreBackup', 'submitCashEntry',
-      'confirmCaisseClose', 'resetUserPin'
+      'confirmCaisseClose', 'resetUserPin', 'validerVente',
+      'openAddCashEntry', 'exportDayTransactions',
+      'submitFreeQuestion', 'printInvoice', 'printSaleReceipt'
     ];
     criticalFns.forEach(_safeGlobal);
 
@@ -433,3 +512,4 @@
   }
 
 })();
+

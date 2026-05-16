@@ -430,7 +430,8 @@ async function renderSettings(container) {
   // Load settings into a map
   const gs = k => settingsData.find(s => s.key === k)?.value || '';
   const smsConfigStr = settingsData.find(s => s.key === 'sms_config')?.value;
-  const smsConfig = smsConfigStr ? JSON.parse(smsConfigStr) : { provider: 'africastalking', enabled: false, apiKey: '', username: '', senderId: 'OrdiveX', countryCode: '+224' };
+  let smsConfig = { provider: 'africastalking', enabled: false, apiKey: '', username: '', senderId: 'OrdiveX', countryCode: '+224' };
+  try { if (smsConfigStr) smsConfig = JSON.parse(smsConfigStr); } catch(e) { /* corrupted sms config — use defaults */ }
 
   const recentAudit = auditLog.sort((a, b) => b.timestamp - a.timestamp).slice(0, 20);
 
