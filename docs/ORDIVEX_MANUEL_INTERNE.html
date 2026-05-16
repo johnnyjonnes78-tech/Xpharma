@@ -1,0 +1,1608 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OrdiveX - Manuel Interne v9.4.1</title>
+<style>
+:root{--bg:#0f1117;--surface:#1a1d27;--surface2:#242837;--border:#2e3348;--text:#e4e6f0;--muted:#8b8fa8;--accent:#4f8cff;--accent2:#6c5ce7;--success:#00b894;--warn:#fdcb6e;--danger:#e17055;--code-bg:#1e2235;--font:'Segoe UI',system-ui,-apple-system,sans-serif;--mono:'Cascadia Code','Fira Code','JetBrains Mono',monospace}
+*{margin:0;padding:0;box-sizing:border-box}html{scroll-behavior:smooth}
+body{font-family:var(--font);background:var(--bg);color:var(--text);line-height:1.7;font-size:15px}
+.container{max-width:960px;margin:0 auto;padding:40px 32px 80px}
+h1{font-size:2.2em;font-weight:800;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin:48px 0 16px;padding-bottom:12px;border-bottom:2px solid var(--border)}
+h2{font-size:1.5em;font-weight:700;color:var(--accent);margin:40px 0 12px;padding-bottom:8px;border-bottom:1px solid var(--border)}
+h3{font-size:1.15em;font-weight:600;color:var(--text);margin:28px 0 8px}
+h4{font-size:1em;font-weight:600;color:var(--muted);margin:20px 0 6px}
+p{margin:8px 0;color:var(--text)}p.step{padding-left:20px;border-left:3px solid var(--accent);margin:6px 0}
+a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}
+strong{color:#fff;font-weight:600}hr{border:none;border-top:1px solid var(--border);margin:32px 0}
+code{font-family:var(--mono);background:var(--code-bg);color:var(--warn);padding:2px 6px;border-radius:4px;font-size:.88em}
+pre{background:var(--code-bg);border:1px solid var(--border);border-radius:8px;padding:16px 20px;overflow-x:auto;margin:12px 0;font-size:.88em;line-height:1.6}
+pre code{background:none;padding:0;color:var(--text)}
+ul,ol{padding-left:24px;margin:8px 0}li{margin:4px 0;color:var(--text)}li::marker{color:var(--accent)}
+blockquote{border-left:4px solid var(--warn);background:rgba(253,203,110,.06);padding:12px 16px;margin:12px 0;border-radius:0 6px 6px 0;color:var(--warn);font-weight:500}
+.table-wrap{overflow-x:auto;margin:12px 0}
+table{width:100%;border-collapse:collapse;font-size:.92em}
+th{background:var(--surface2);color:var(--accent);font-weight:600;text-align:left;padding:10px 14px;border-bottom:2px solid var(--border);white-space:nowrap}
+td{padding:8px 14px;border-bottom:1px solid var(--border);color:var(--text)}
+tr:nth-child(even) td{background:rgba(255,255,255,.02)}
+@media print{body{background:#fff;color:#222}.container{max-width:100%;padding:20px}h1,h2,h3{color:#1a1a2e;-webkit-text-fill-color:#1a1a2e}pre,code{background:#f5f5f5;color:#333;border-color:#ddd}table th{background:#eee;color:#333}table td{color:#333;border-color:#ddd}}
+</style>
+</head>
+<body>
+<div class="container">
+<h1 id="ordivex-manuel-interne-v941">OrdiveX  MANUEL Interne v9.4.1</h1>
+<p><strong>Document confidentiel  Usage interne TrillionX uniquement</strong></p>
+<p>Dernire mise a jour : 16 Mai 2026 | Version : 9.4.1</p>
+<hr>
+<h1 id="sommaire-gnral">SOMMAIRE GNRAL</h1>
+<h2 id="partie-i-prsentation-architecture">PARTIE I  PRSENTATION & ARCHITECTURE</h2>
+<ul>
+<li><a href="#chapitre-1--prsentation-gnrale">Chapitre 1  Prsentation Gnrale</a></li>
+<li><a href="#chapitre-2--architecture-technique">Chapitre 2  Architecture Technique</a></li>
+<li><a href="#chapitre-3--installation--dploiement">Chapitre 3  Installation & Dploiement</a></li>
+</ul>
+<h2 id="partie-ii-modules-fonctionnels">PARTIE II  MODULES FONCTIONNELS</h2>
+<ul>
+<li><a href="#chapitre-4--authentification--scurit">Chapitre 4  Authentification & Scurit</a></li>
+<li><a href="#chapitre-5--point-de-vente-pos">Chapitre 5  Point de Vente (POS)</a></li>
+<li><a href="#chapitre-6--double-traabilit-vendeurprparateur">Chapitre 6  Double Traabilit Vendeur/Prparateur</a></li>
+<li><a href="#chapitre-7--multi-onglets-pos">Chapitre 7  Multi-Onglets POS</a></li>
+<li><a href="#chapitre-8--catalogue-produits">Chapitre 8  Catalogue Produits</a></li>
+<li><a href="#chapitre-9--gestion-des-stocks--fefo">Chapitre 9  Gestion des Stocks & FEFO</a></li>
+<li><a href="#chapitre-10--caisse-journalire--clture">Chapitre 10  Caisse Journalire & Clture</a></li>
+<li><a href="#chapitre-11--ordonnances">Chapitre 11  Ordonnances</a></li>
+<li><a href="#chapitre-12--dossiers-patients">Chapitre 12  Dossiers Patients</a></li>
+<li><a href="#chapitre-13--fournisseurs--bons-de-commande">Chapitre 13  Fournisseurs & Bons de Commande</a></li>
+<li><a href="#chapitre-14--historique-des-ventes--crdits">Chapitre 14  Historique des Ventes & Crdits</a></li>
+<li><a href="#chapitre-15--retours-de-mdicaments">Chapitre 15  Retours de Mdicaments</a></li>
+<li><a href="#chapitre-16--paiements">Chapitre 16  Paiements : Espces, Mobile Money, Assurance, Mixte, Crdit</a></li>
+<li><a href="#chapitre-17--interactions-mdicamenteuses">Chapitre 17  Interactions Mdicamenteuses & Alertes Allergies</a></li>
+<li><a href="#chapitre-18--dconditionnement">Chapitre 18  Dconditionnement (Vente a l'Unit)</a></li>
+<li><a href="#chapitre-19--centre-dimpression">Chapitre 19  Centre d'Impression</a></li>
+<li><a href="#chapitre-20--traabilit--pharmacovigilance">Chapitre 20  Traabilit & Pharmacovigilance</a></li>
+</ul>
+<h2 id="partie-iii-analytique-intelligence">PARTIE III  ANALYTIQUE & INTELLIGENCE</h2>
+<ul>
+<li><a href="#chapitre-21--tableau-de-bord">Chapitre 21  Tableau de Bord</a></li>
+<li><a href="#chapitre-22--mtriques-business-intelligence">Chapitre 22  Mtriques Business Intelligence</a></li>
+<li><a href="#chapitre-23--rapports--analytique-avance">Chapitre 23  Rapports & Analytique Avance</a></li>
+<li><a href="#chapitre-24--centre-dalertes">Chapitre 24  Centre d'Alertes</a></li>
+</ul>
+<h2 id="partie-iv-administration-maintenance">PARTIE IV  ADMINISTRATION & MAINTENANCE</h2>
+<ul>
+<li><a href="#chapitre-25--paramtres--configuration">Chapitre 25  Paramtres & Configuration</a></li>
+<li><a href="#chapitre-26--gestion-des-utilisateurs--rles">Chapitre 26  Gestion des Utilisateurs & Rles</a></li>
+<li><a href="#chapitre-27--synchronisation-cloud">Chapitre 27  Synchronisation Cloud (Supabase)</a></li>
+<li><a href="#chapitre-28--sauvegarde--restauration">Chapitre 28  Sauvegarde & Restauration</a></li>
+<li><a href="#chapitre-29--sms--notifications">Chapitre 29  SMS & Notifications</a></li>
+<li><a href="#chapitre-30--naomie-ai">Chapitre 30  Naomie AI  Assistante Virtuelle</a></li>
+<li><a href="#chapitre-31--module-de-stabilit">Chapitre 31  Module de Stabilit & Gestion d'Erreurs</a></li>
+<li><a href="#chapitre-32--vrification-de-version">Chapitre 32  Vrification de Version & Mises a Jour</a></li>
+</ul>
+<h2 id="partie-v-exploitation">PARTIE V  EXPLOITATION</h2>
+<ul>
+<li><a href="#chapitre-33--onboarding">Chapitre 33  Onboarding Nouvelle Pharmacie</a></li>
+<li><a href="#chapitre-34--procdures-de-maintenance">Chapitre 34  Procdures de Maintenance</a></li>
+<li><a href="#chapitre-35--troubleshooting">Chapitre 35  Rsolution de Problmes (Troubleshooting)</a></li>
+<li><a href="#chapitre-36--raccourcis-clavier">Chapitre 36  Raccourcis Clavier</a></li>
+<li><a href="#chapitre-37--limites-connues">Chapitre 37  Limites Connues & Roadmap</a></li>
+<li><a href="#annexe-a--structure-des-fichiers">Annexe A  Structure des Fichiers</a></li>
+<li><a href="#annexe-b--schma-indexeddb">Annexe B  Schma IndexedDB</a></li>
+<li><a href="#annexe-c--glossaire">Annexe C  Glossaire</a></li>
+</ul>
+<hr>
+<h1 id="partie-i-prsentation-architecture">PARTIE I  PRSENTATION & ARCHITECTURE</h1>
+<hr>
+<h2 id="chapitre-1-prsentation-gnrale">Chapitre 1  Prsentation Gnrale</h2>
+<h3 id="11-questce-quordivex-">1.1 Qu'est-ce qu'OrdiveX ?</h3>
+<p>OrdiveX est un <strong>ERP (Enterprise Resource Planning) complet</strong> conu spcifiquement pour la gestion des pharmacies en Afrique. Dvelopp par <strong>TrillionX</strong>, il fonctionne en mode <strong>offline-first</strong> (100% hors-ligne) avec synchronisation cloud optionnelle.</p>
+<h3 id="12-philosophie-de-conception">1.2 Philosophie de Conception</h3>
+<div class="table-wrap"><table><thead><tr>
+<th>Principe</th>
+<th>Description</th>
+</tr></thead><tbody>
+<tr>
+<td>**Offline-First**</td>
+<td>L'app fonctionne a 100% sans internet. Les donnes sont stockes localement dans IndexedDB</td>
+</tr>
+<tr>
+<td>**PWA**</td>
+<td>Progressive Web App installable sur PC, tablette et smartphone</td>
+</tr>
+<tr>
+<td>**FEFO**</td>
+<td>First Expired, First Out  gestion automatique des lots par date de premption</td>
+</tr>
+<tr>
+<td>**Scurit Patient**</td>
+<td>30+ interactions mdicamenteuses vrifies a chaque vente</td>
+</tr>
+<tr>
+<td>**Multi-devises**</td>
+<td>GNF, XOF, MAD, EUR, USD  configurable par pharmacie</td>
+</tr>
+<tr>
+<td>**Mobile Money**</td>
+<td>Orange Money & MTN MoMo natifs</td>
+</tr>
+</tbody></table></div>
+<h3 id="13-modules-disponibles-17-pages">1.3 Modules Disponibles (17 pages)</h3>
+<div class="table-wrap"><table><thead><tr>
+<th>Module</th>
+<th>Fichier</th>
+<th>Rles Autoriss</th>
+</tr></thead><tbody>
+<tr>
+<td>Tableau de Bord</td>
+<td>`dashboard.js`</td>
+<td>Admin, Pharmacien, Caissier</td>
+</tr>
+<tr>
+<td>Point de Vente (POS)</td>
+<td>`pos.js` (140 Ko)</td>
+<td>Admin, Pharmacien, Caissier</td>
+</tr>
+<tr>
+<td>Caisse Journalire</td>
+<td>`caisse.js`</td>
+<td>Admin, Pharmacien, Caissier</td>
+</tr>
+<tr>
+<td>Catalogue Produits</td>
+<td>`products.js`</td>
+<td>Admin, Pharmacien</td>
+</tr>
+<tr>
+<td>Gestion des Stocks</td>
+<td>`stock.js`</td>
+<td>Admin, Pharmacien</td>
+</tr>
+<tr>
+<td>Rapprovisionnement</td>
+<td>(intgr stock)</td>
+<td>Admin, Pharmacien</td>
+</tr>
+<tr>
+<td>Ordonnances</td>
+<td>`prescriptions.js`</td>
+<td>Admin, Pharmacien</td>
+</tr>
+<tr>
+<td>Dossiers Patients</td>
+<td>`patients.js`</td>
+<td>Admin, Pharmacien</td>
+</tr>
+<tr>
+<td>Fournisseurs</td>
+<td>`suppliers.js`</td>
+<td>Admin, Pharmacien</td>
+</tr>
+<tr>
+<td>Bons de Commande</td>
+<td>(intgr suppliers)</td>
+<td>Admin, Pharmacien</td>
+</tr>
+<tr>
+<td>Traabilit</td>
+<td>`traceability.js` (107 Ko)</td>
+<td>Admin, Pharmacien</td>
+</tr>
+<tr>
+<td>Historique Ventes</td>
+<td>`sales.js`</td>
+<td>Admin, Pharmacien, Caissier</td>
+</tr>
+<tr>
+<td>Retours</td>
+<td>`returns.js`</td>
+<td>Admin, Pharmacien</td>
+</tr>
+<tr>
+<td>Rapports & Analytique</td>
+<td>(intgr sales)</td>
+<td>Admin, Pharmacien</td>
+</tr>
+<tr>
+<td>Mtriques Business</td>
+<td>`metrics.js`</td>
+<td>Admin, Pharmacien</td>
+</tr>
+<tr>
+<td>Centre d'Impression</td>
+<td>`print.js`</td>
+<td>Admin, Pharmacien</td>
+</tr>
+<tr>
+<td>Alertes</td>
+<td>`alerts.js`</td>
+<td>Admin, Pharmacien, Caissier</td>
+</tr>
+<tr>
+<td>Paramtres</td>
+<td>`settings.js`</td>
+<td>Admin uniquement</td>
+</tr>
+</tbody></table></div>
+<h3 id="14-stack-technologique">1.4 Stack Technologique</h3>
+<ul>
+<li><strong>Frontend</strong> : HTML5, CSS3, JavaScript ES6+ (Vanilla  aucun framework)</li>
+<li><strong>Base de donnes</strong> : IndexedDB (via API native)</li>
+<li><strong>Cloud</strong> : Supabase (PostgreSQL + Auth + Realtime)</li>
+<li><strong>Icnes</strong> : Lucide Icons</li>
+<li><strong>Hbergement</strong> : GitHub Pages</li>
+<li><strong>Impression</strong> : API <code>window.print()</code> avec templates A4 et thermique 80mm</li>
+</ul>
+<hr>
+<h2 id="chapitre-2-architecture-technique">Chapitre 2  Architecture Technique</h2>
+<h3 id="21-structure-des-fichiers">2.1 Structure des Fichiers</h3>
+<pre><code class="language-text">
+pharma_projet_v4/
+ index.html              # Point d'entre unique (SPA)
+ version.json            # Manifest de version pour auto-update
+ css/
+    main.css            # 10 000+ lignes  design system complet
+ js/
+    db.js               # Moteur IndexedDB + Supabase sync (82 Ko)
+    auth.js             # Authentification, PIN, verrouillage
+    ui.js               # Composants UI (modals, toasts, charts)
+    mobile-money.js     # Gateway Orange Money / MTN MoMo
+    sms.js              # Service SMS AfricasTalking
+    pages/              # 17 modules de pages
+    ui/                 # Palette de commandes, feedback
+    utils/              # Animations, stabilit
+    components/         # Widget Naomie AI
+    vendor/             # Supabase SDK, Lucide
+ docs/                   # Documentation interne
+</code></pre>
+<h3 id="22-flux-de-donnes">2.2 Flux de Donnes</h3>
+<pre><code class="language-text">
+Utilisateur  UI (ui.js)  Page Module (pos.js, etc.)
+                                    
+                              DB.dbPut/dbAdd (db.js)
+                                    
+                              IndexedDB (local)
+                                     (si en ligne)
+                              Supabase (cloud)
+                                     (broadcast)
+                              Autres appareils
+</code></pre>
+<h3 id="23-stores-indexeddb-ordivexdb-v2">2.3 Stores IndexedDB (OrdiveXDB v2)</h3>
+<div class="table-wrap"><table><thead><tr>
+<th>Store</th>
+<th>Cl</th>
+<th>Description</th>
+</tr></thead><tbody>
+<tr>
+<td>`products`</td>
+<td>`id` (auto)</td>
+<td>Catalogue mdicaments</td>
+</tr>
+<tr>
+<td>`stock`</td>
+<td>`id` (auto)</td>
+<td>Entres de stock par produit</td>
+</tr>
+<tr>
+<td>`sales`</td>
+<td>`id` (auto)</td>
+<td>Historique des ventes</td>
+</tr>
+<tr>
+<td>`saleItems`</td>
+<td>`id` (auto)</td>
+<td>Lignes de dtail de chaque vente</td>
+</tr>
+<tr>
+<td>`patients`</td>
+<td>`id` (auto)</td>
+<td>Fiches patients</td>
+</tr>
+<tr>
+<td>`prescriptions`</td>
+<td>`id` (auto)</td>
+<td>Ordonnances</td>
+</tr>
+<tr>
+<td>`suppliers`</td>
+<td>`id` (auto)</td>
+<td>Fournisseurs</td>
+</tr>
+<tr>
+<td>`purchaseOrders`</td>
+<td>`id` (auto)</td>
+<td>Bons de commande</td>
+</tr>
+<tr>
+<td>`movements`</td>
+<td>`id` (auto)</td>
+<td>Mouvements de stock (entre/sortie)</td>
+</tr>
+<tr>
+<td>`lots`</td>
+<td>`id` (auto)</td>
+<td>Lots avec numro, DLC, quantit</td>
+</tr>
+<tr>
+<td>`cashRegister`</td>
+<td>`id` (auto)</td>
+<td>critures de caisse (entre/sortie/clture)</td>
+</tr>
+<tr>
+<td>`returns`</td>
+<td>`id` (auto)</td>
+<td>Retours de mdicaments</td>
+</tr>
+<tr>
+<td>`settings`</td>
+<td>`key`</td>
+<td>Paramtres cl-valeur</td>
+</tr>
+<tr>
+<td>`users`</td>
+<td>`id` (auto)</td>
+<td>Utilisateurs et rles</td>
+</tr>
+<tr>
+<td>`auditLog`</td>
+<td>`id` (auto)</td>
+<td>Journal d'audit horodat</td>
+</tr>
+<tr>
+<td>`syncQueue`</td>
+<td>`id` (auto)</td>
+<td>File d'attente de synchronisation</td>
+</tr>
+</tbody></table></div>
+<h3 id="24-livesync-rafrachissement-automatique">2.4 LiveSync  Rafrachissement Automatique</h3>
+<p>Quand une donne change dans IndexedDB (ex: nouvelle vente), le systme <code>_notifyUIChange()</code> dans <code>db.js</code> rafrachit automatiquement la page active si elle dpend du store modifi :</p>
+<div class="table-wrap"><table><thead><tr>
+<th>Page Active</th>
+<th>Stores couts</th>
+</tr></thead><tbody>
+<tr>
+<td>`dashboard`</td>
+<td>`sales`, `saleItems`, `products`, `stock`</td>
+</tr>
+<tr>
+<td>`pos`</td>
+<td>*(jamais rafrachi automatiquement  trop risqu)*</td>
+</tr>
+<tr>
+<td>`products`</td>
+<td>`products`</td>
+</tr>
+<tr>
+<td>`stock`</td>
+<td>`stock`, `products`</td>
+</tr>
+<tr>
+<td>`sales`</td>
+<td>`sales`</td>
+</tr>
+<tr>
+<td>`caisse`</td>
+<td>`cashRegister`, `sales`</td>
+</tr>
+<tr>
+<td>`settings`</td>
+<td>`users` *(pas settings pour viter les reloads en boucle)*</td>
+</tr>
+</tbody></table></div>
+<hr>
+<h2 id="chapitre-3-installation-dploiement">Chapitre 3  Installation & Dploiement</h2>
+<h3 id="31-prrequis">3.1 Prrequis</h3>
+<ul>
+<li>Navigateur moderne : Chrome 90+, Edge 90+, Firefox 90+, Safari 15+</li>
+<li>Espace disque : minimum 500 Mo disponible pour IndexedDB</li>
+<li>Rsolution cran : minimum 360px (mobile) / recommand 1280px+ (desktop)</li>
+</ul>
+<h3 id="32-installation-sur-pc-pwa">3.2 Installation sur PC (PWA)</h3>
+<p class="step">Ouvrir <code>https://johnnyjonnes78-tech.github.io/Xpharma/</code> dans Chrome</p>
+<p class="step">Cliquer sur l'icne  "Installer" dans la barre d'adresse</p>
+<p class="step">Confirmer l'installation</p>
+<p class="step">L'app apparat comme une application native sur le bureau</p>
+<h3 id="33-installation-sur-mobile">3.3 Installation sur Mobile</h3>
+<p class="step">Ouvrir l'URL dans Chrome Android / Safari iOS</p>
+<p class="step">Menu   "Ajouter a l'cran d'accueil"</p>
+<p class="step">L'app s'installe avec son icne</p>
+<h3 id="34-dploiement-github-pages">3.4 Dploiement GitHub Pages</h3>
+<pre><code class="language-bash">
+# Depuis le rpertoire du projet
+git add -A
+git commit -m "v9.4.1: description des changements"
+git push origin main
+</code></pre>
+<p>Le site se met a jour automatiquement en 2-5 minutes via GitHub Actions.</p>
+<h3 id="35-mise-a-jour-de-version">3.5 Mise a jour de version</h3>
+<p class="step">Modifier <code>APP_VERSION</code> dans <code>index.html</code> ligne 22</p>
+<p class="step">Modifier <code>version.json</code> a la racine</p>
+<p class="step">Incrmenter les <code>?v=X.X.X</code> dans les balises <code><script></code> de <code>index.html</code></p>
+<p class="step">Push sur <code>main</code></p>
+<p class="step">Les utilisateurs recevront une notification via Naomie AI</p>
+<h3 id="36-configuration-supabase-cloud-sync">3.6 Configuration Supabase (Cloud Sync)</h3>
+<p class="step">Crer un projet sur [supabase.com](https://supabase.com)</p>
+<p class="step">Excuter <code>supabase_schema.sql</code> dans l'diteur SQL</p>
+<p class="step">Dans OrdiveX  Paramtres  Cloud : entrer l'URL et la cl <code>anon</code></p>
+<p class="step">Cliquer "Tester la connexion"</p>
+<p class="step">Activer "Push automatique"</p>
+<hr>
+<h1 id="partie-ii-modules-fonctionnels">PARTIE II  MODULES FONCTIONNELS</h1>
+<hr>
+<h2 id="chapitre-4-authentification-scurit">Chapitre 4  Authentification & Scurit</h2>
+<h3 id="41-systme-de-connexion">4.1 Systme de Connexion</h3>
+<p>Au lancement, OrdiveX affiche un cran de slection d'utilisateur. Chaque utilisateur a :</p>
+<ul>
+<li><strong>Nom d'utilisateur</strong> (login)</li>
+<li><strong>Mot de passe</strong> (hash en SHA-256 dans IndexedDB)</li>
+<li><strong>Code PIN</strong> (4 chiffres, obligatoire)</li>
+<li><strong>Rle</strong> (admin, pharmacien, caissier)</li>
+</ul>
+<h3 id="42-code-pin-rgles">4.2 Code PIN  Rgles</h3>
+<div class="table-wrap"><table><thead><tr>
+<th>Rgle</th>
+<th>Dtail</th>
+</tr></thead><tbody>
+<tr>
+<td>**Obligatoire**</td>
+<td>Chaque utilisateur DOIT dfinir un PIN a sa premire connexion</td>
+</tr>
+<tr>
+<td>**Par dfaut**</td>
+<td>Les utilisateurs crs avant v9.4.1 n'ont pas de PIN  ils sont forcs d'en crer un</td>
+</tr>
+<tr>
+<td>**Format**</td>
+<td>4 chiffres exactement</td>
+</tr>
+<tr>
+<td>**Usage**</td>
+<td>Verrouillage rapide, validation de vente sensible</td>
+</tr>
+<tr>
+<td>**Stockage**</td>
+<td>Champ `pin` dans le store `users` (en clair dans IndexedDB, hash en production recommand)</td>
+</tr>
+</tbody></table></div>
+<h3 id="43-verrouillage-automatique">4.3 Verrouillage Automatique</h3>
+<p>Aprs <strong>5 minutes d'inactivit</strong> (aucun mouvement souris, clavier, ou touch), l'cran se verrouille :</p>
+<ul>
+<li>L'utilisateur doit saisir son mot de passe pour reprendre</li>
+<li>Option "Changer d'utilisateur" pour revenir a l'cran de login</li>
+<li><strong>Le panier POS n'est PAS perdu</strong> (conserv en mmoire)</li>
+</ul>
+<h3 id="44-rles-et-permissions">4.4 Rles et Permissions</h3>
+<div class="table-wrap"><table><thead><tr>
+<th>Permission</th>
+<th>Admin</th>
+<th>Pharmacien</th>
+<th>Caissier</th>
+</tr></thead><tbody>
+<tr>
+<td>Point de Vente</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>Voir le tableau de bord</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>Historique ventes</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>Alertes</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>Catalogue produits</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>Gestion des stocks</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>Ordonnances</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>Patients</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>Fournisseurs</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>Retours</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>Mtriques</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>Impression</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>Traabilit</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>**Paramtres**</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>**Crer/supprimer utilisateurs**</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+</tbody></table></div>
+<h3 id="45-journal-daudit">4.5 Journal d'Audit</h3>
+<p>Chaque action est trace dans le store <code>auditLog</code> :</p>
+<pre><code class="language-json">
+{
+  "id": 1234,
+  "timestamp": 1715875200000,
+  "userId": "user_001",
+  "userName": "Dr. Diallo",
+  "action": "SALE_CREATED",
+  "details": "Vente #5023  3 articles  125 000 GNF",
+  "page": "pos"
+}
+</code></pre>
+<p>Actions audites : connexion, dconnexion, vente, annulation, modification produit, changement stock, destruction de lot, cration utilisateur, modification paramtres, export donnes, import CSV.</p>
+<hr>
+<h2 id="chapitre-5-point-de-vente-pos">Chapitre 5  Point de Vente (POS)</h2>
+<h3 id="51-vue-densemble">5.1 Vue d'Ensemble</h3>
+<p>Le POS est le <strong>cur d'OrdiveX</strong> (fichier le plus volumineux : 140 Ko, 2 854 lignes). Il se compose de :</p>
+<ul>
+<li><strong>Panneau gauche</strong> : Grille de produits avec recherche, catgories, tri</li>
+<li><strong>Panneau droit</strong> : Panier, patient, ordonnance, paiement, validation</li>
+</ul>
+<h3 id="52-recherche-de-produits">5.2 Recherche de Produits</h3>
+<p>La barre de recherche filtre en temps rel par :</p>
+<ul>
+<li>Nom commercial (ex: "Doliprane")</li>
+<li>DCI / Molcule (ex: "paractamol")</li>
+<li>Code-barres EAN</li>
+<li>Code CIP</li>
+<li>Code interne</li>
+</ul>
+<p><strong>Sur mobile</strong> : La recherche utilise <code>DB.dbSearchProducts()</code> avec limite de 100 rsultats pour la performance.</p>
+<p><strong>Sur PC</strong> : Tous les produits sont chargs en mmoire pour un filtrage instantan.</p>
+<h3 id="53-catgories-et-tri">5.3 Catgories et Tri</h3>
+<ul>
+<li><strong>Catgories</strong> : Pilules filtrantes en haut (Toutes, Antibiotiques, Antalgiques, etc.)</li>
+<li><strong>Tri</strong> : Nom AZ, Nom ZA, Prix , Prix , Stock , Stock</li>
+<li>Les produits en <strong>rupture</strong> sont toujours affichs en dernier, quelle que soit le tri</li>
+</ul>
+<h3 id="54-carte-produit">5.4 Carte Produit</h3>
+<p>Chaque carte affiche :</p>
+<ul>
+<li>Badge <strong>Rx</strong> (prescription requise) ou <strong>OTC</strong> (vente libre)</li>
+<li>Badge <strong>SC</strong> (substance contrle) en rouge si applicable</li>
+<li>Nom, DCI, catgorie</li>
+<li>Prix de vente avec unit (bte, fl, tube...)</li>
+<li>Stock en temps rel avec indicateur couleur (vert/orange/rouge)</li>
+<li>Marge (visible uniquement pour admin/pharmacien)</li>
+<li>Boutons : <strong>Bote</strong>, <strong>Plaquette</strong> (si dconditionnement), <strong>Unit</strong>, <strong>Notice </strong></li>
+</ul>
+<h3 id="55-ajout-au-panier">5.5 Ajout au Panier</h3>
+<p>Quand on clique sur un produit ou un bouton d'unit :</p>
+<p class="step">Vrification du stock disponible</p>
+<p class="step"><strong>Vrification des interactions mdicamenteuses</strong> avec les produits dja dans le panier</p>
+<p class="step"><strong>Vrification des allergies</strong> si un patient est slectionn</p>
+<p class="step">Slection automatique du lot FEFO (First Expired, First Out)</p>
+<p class="step">Ajout au panier avec prix calcul selon l'unit choisie</p>
+<p class="step">Si produit dja dans le panier  incrmentation de la quantit</p>
+<h3 id="56-gestion-du-panier">5.6 Gestion du Panier</h3>
+<p>Pour chaque article du panier :</p>
+<ul>
+<li><strong>+/-</strong> : Ajuster la quantit (max = stock disponible)</li>
+<li><strong>Poubelle</strong> : Retirer du panier</li>
+<li><strong>Prix modifiable</strong> (remise ponctuelle sur l'article)</li>
+<li>Sous-total par article</li>
+</ul>
+<p>En bas du panier :</p>
+<ul>
+<li><strong>Sous-total</strong> : Somme de tous les articles</li>
+<li><strong>Remise globale</strong> : Montant en GNF a dduire</li>
+<li><strong>TOTAL  PAYER</strong> : Sous-total - Remise</li>
+</ul>
+<h3 id="57-slection-patient">5.7 Slection Patient</h3>
+<ul>
+<li>Cliquer "Choisir un patient..."  Rpertoire avec recherche</li>
+<li>Ou cliquer "+ Nouveau"  Formulaire rapide (nom, tlphone, allergies)</li>
+<li>Le patient slectionn active :</li>
+<li>Vrification des allergies a chaque ajout au panier</li>
+<li>Possibilit de vente a crdit</li>
+<li>Traabilit complte sur le reu</li>
+</ul>
+<h3 id="58-flux-de-validation">5.8 Flux de Validation</h3>
+<pre><code class="language-text">
+Panier rempli  Choisir mode de paiement  Valider (F5)
+     
+Vrification : Panier non vide ?
+     
+Vrification : Caisse clture aujourd'hui ?  Si oui : BLOQU
+     
+Vrification : Crdit sans patient ?  Si oui : BLOQU
+     
+Vrification : Montant encaiss suffisant ? (pour espces)
+     
+Cration de la vente dans IndexedDB (store 'sales')
+     
+Cration des lignes dtail (store 'saleItems')
+     
+Dstockage automatique FEFO (store 'stock')
+     
+Enregistrement mouvement (store 'movements')
+     
+Si ordonnance lie  mise a jour statut (store 'prescriptions')
+     
+Affichage du reu (modal avec boutons Imprimer / Fermer)
+     
+Reset du panier
+</code></pre>
+<hr>
+<h2 id="chapitre-6-double-traabilit-vendeurprparateur">Chapitre 6  Double Traabilit Vendeur/Prparateur</h2>
+<h3 id="61-concept">6.1 Concept</h3>
+<p>En pharmacie, il est frquent que <strong>deux personnes</strong> interviennent dans une vente :</p>
+<ul>
+<li>Le <strong>Prparateur</strong> : prpare le panier, vrifie les stocks, ajoute les produits</li>
+<li>Le <strong>Vendeur/Caissier</strong> : encaisse le paiement et valide la vente</li>
+</ul>
+<p>OrdiveX trace les deux rles sparment.</p>
+<h3 id="62-scnario-type">6.2 Scnario Type</h3>
+<pre><code class="language-text">
+1. Pharmacien A se connecte  prpare un panier (ordonnance du Dr. Camara)
+2. Pharmacien A clique " Attente"  le panier est sauvegard avec son ID
+3. Pharmacien A se dconnecte (ou le caissier prend le relais)
+4. Caissier B se connecte  le panier est automatiquement restaur
+5. Caissier B encaisse  la vente est enregistre avec :
+   - sellerName = "Caissier B" (celui qui a cliqu Valider)
+   - preparerName = "Pharmacien A" (celui qui a prpar le panier)
+</code></pre>
+<h3 id="63-implmentation-technique">6.3 Implmentation Technique</h3>
+<p><strong>Mise en attente</strong> (<code>mettreEnAttente()</code>  pos.js ligne 1656) :</p>
+<pre><code class="language-javascript">
+window._heldCart = {
+  items: [...posCart],          // Copie du panier
+  patient: posCurrentPatient,   // Patient li
+  rx: posCurrentRx,            // Ordonnance lie
+  preparerId: DB.AppState.currentUser?.id,    // ID du prparateur
+  preparerName: DB.AppState.currentUser?.name  // Nom du prparateur
+};
+</code></pre>
+<p><strong>Restauration</strong> (lors du <code>renderFullPOSUI()</code>  pos.js ligne 586) :</p>
+<pre><code class="language-javascript">
+if (window._heldCart) {
+  posCart = window._heldCart.items;
+  posCurrentPatient = window._heldCart.patient;
+  posCurrentRx = window._heldCart.rx;
+  // Si le prparateur est diffrent du vendeur actuel  sauvegarder
+  if (window._heldCart.preparerId !== DB.AppState.currentUser?.id) {
+    window._heldCartPreparer = {
+      id: window._heldCart.preparerId,
+      name: window._heldCart.preparerName
+    };
+  }
+}
+</code></pre>
+<p><strong>Enregistrement de la vente</strong> (pos.js ligne 1887) :</p>
+<pre><code class="language-javascript">
+const saleData = {
+  sellerName: DB.AppState.currentUser?.name,           // Vendeur = celui qui valide
+  preparerId: window._heldCartPreparer?.id || currentUser.id,  // Prparateur
+  preparerName: window._heldCartPreparer?.name || null,
+  // ... reste des donnes
+};
+</code></pre>
+<h3 id="64-affichage-sur-le-reu">6.4 Affichage sur le Reu</h3>
+<p>Le reu (A4 et thermique) affiche les deux noms si diffrents :</p>
+<pre><code class="language-text">
+Vendeur : Caissier B
+Prparateur : Pharmacien A     affich UNIQUEMENT si diffrent du vendeur
+</code></pre>
+<h3 id="65-cas-particuliers">6.5 Cas Particuliers</h3>
+<div class="table-wrap"><table><thead><tr>
+<th>Situation</th>
+<th>Rsultat</th>
+</tr></thead><tbody>
+<tr>
+<td>Mme personne prpare et vend</td>
+<td>`preparerName = null` (pas affich sparment)</td>
+</tr>
+<tr>
+<td>Prparateur met en attente, mme personne reprend</td>
+<td>Pas de double traabilit</td>
+</tr>
+<tr>
+<td>Panier en attente mais personne ne reprend</td>
+<td>Le panier reste en `window._heldCart` jusqu'au rechargement de la page</td>
+</tr>
+<tr>
+<td>App recharge avant reprise</td>
+<td>**Le panier en attente est PERDU** (stock en RAM uniquement)</td>
+</tr>
+</tbody></table></div>
+<blockquote><strong>Limitation connue</strong> : Le panier en attente est stock en `window._heldCart` (variable JavaScript en RAM). Si l'app est recharge, le panier disparat. Pour une persistance, il faudrait le sauvegarder dans IndexedDB.</blockquote>
+<hr>
+<h2 id="chapitre-7-multionglets-pos">Chapitre 7  Multi-Onglets POS</h2>
+<h3 id="71-concept">7.1 Concept</h3>
+<p>Depuis la v9.4, le POS supporte <strong>plusieurs ventes simultanes</strong> via un systme d'onglets. Chaque onglet a son propre panier, patient et ordonnance.</p>
+<h3 id="72-utilisation">7.2 Utilisation</h3>
+<ul>
+<li><strong>Ajouter un onglet</strong> : Cliquer le bouton "+" dans la barre d'onglets</li>
+<li><strong>Basculer</strong> : Cliquer sur l'onglet souhait</li>
+<li><strong>Fermer</strong> : Cliquer le "" sur l'onglet (confirmation si panier non vide)</li>
+<li><strong>Minimum</strong> : 1 onglet (impossible de fermer le dernier)</li>
+</ul>
+<h3 id="73-donnes-par-onglet">7.3 Donnes par Onglet</h3>
+<p>Chaque session <code>_posSessions[i]</code> contient :</p>
+<pre><code class="language-javascript">
+{
+  id: 1,              // Identifiant unique
+  label: 'Vente 1',   // Nom affich dans l'onglet
+  cart: [],            // Panier (copie indpendante)
+  patient: null,       // Patient slectionn
+  rx: null             // Ordonnance lie
+}
+</code></pre>
+<h3 id="74-scnario-multiclients">7.4 Scnario Multi-Clients</h3>
+<pre><code class="language-text">
+Onglet 1 : Client A achte du Doliprane (en attente de la monnaie)
+     Cliquer "+"
+Onglet 2 : Client B arrive, urgent, achte de l'Amoxicilline
+     Valider la vente du client B
+     Revenir a l'onglet 1
+     Continuer la vente du client A
+</code></pre>
+<h3 id="75-rgles-importantes">7.5 Rgles Importantes</h3>
+<ul>
+<li>Le badge numrique sur chaque onglet indique le nombre d'articles dans le panier</li>
+<li>Changer d'onglet <strong>sauvegarde automatiquement</strong> l'onglet actuel</li>
+<li>Les donnes produits et stocks sont <strong>partages</strong> entre tous les onglets (un seul pool de donnes)</li>
+<li>Si Client A achte le dernier stock d'un produit, Client B le verra en rupture</li>
+</ul>
+<hr>
+<h2 id="chapitre-8-catalogue-produits">Chapitre 8  Catalogue Produits</h2>
+<h3 id="81-fiche-produit-complte">8.1 Fiche Produit Complte</h3>
+<p>Chaque mdicament contient les champs suivants :</p>
+<div class="table-wrap"><table><thead><tr>
+<th>Champ</th>
+<th>Type</th>
+<th>Obligatoire</th>
+<th>Description</th>
+</tr></thead><tbody>
+<tr>
+<td>`name`</td>
+<td>Texte</td>
+<td></td>
+<td>Nom commercial (ex: Doliprane 500mg)</td>
+</tr>
+<tr>
+<td>`dci`</td>
+<td>Texte</td>
+<td></td>
+<td>Dnomination Commune Internationale (ex: Paractamol)</td>
+</tr>
+<tr>
+<td>`brand`</td>
+<td>Texte</td>
+<td></td>
+<td>Laboratoire/Marque</td>
+</tr>
+<tr>
+<td>`category`</td>
+<td>Texte</td>
+<td></td>
+<td>Catgorie (55+ prdfinies + saisie libre)</td>
+</tr>
+<tr>
+<td>`form`</td>
+<td>Texte</td>
+<td></td>
+<td>Forme (comprim, sirop, injectable...)</td>
+</tr>
+<tr>
+<td>`purchasePrice`</td>
+<td>Nombre</td>
+<td></td>
+<td>Prix d'achat HT</td>
+</tr>
+<tr>
+<td>`salePrice`</td>
+<td>Nombre</td>
+<td></td>
+<td>Prix de vente</td>
+</tr>
+<tr>
+<td>`minStock`</td>
+<td>Nombre</td>
+<td></td>
+<td>Seuil d'alerte stock bas (dfaut: 10)</td>
+</tr>
+<tr>
+<td>`ean`</td>
+<td>Texte</td>
+<td></td>
+<td>Code-barres EAN-13</td>
+</tr>
+<tr>
+<td>`cip`</td>
+<td>Texte</td>
+<td></td>
+<td>Code CIP</td>
+</tr>
+<tr>
+<td>`requiresPrescription`</td>
+<td>Bool</td>
+<td></td>
+<td>Ncessite une ordonnance</td>
+</tr>
+<tr>
+<td>`isControlled`</td>
+<td>Bool</td>
+<td></td>
+<td>Substance contrle (tableau)</td>
+</tr>
+<tr>
+<td>`allowUnitSale`</td>
+<td>Bool</td>
+<td></td>
+<td>Autoriser la vente a l'unit</td>
+</tr>
+<tr>
+<td>`subUnitsPerBox`</td>
+<td>Nombre</td>
+<td></td>
+<td>Plaquettes par bote</td>
+</tr>
+<tr>
+<td>`unitsPerBox`</td>
+<td>Nombre</td>
+<td></td>
+<td>Units par plaquette</td>
+</tr>
+<tr>
+<td>`unitPrice`</td>
+<td>Nombre</td>
+<td></td>
+<td>Prix par unit</td>
+</tr>
+<tr>
+<td>`subUnitPrice`</td>
+<td>Nombre</td>
+<td></td>
+<td>Prix par plaquette</td>
+</tr>
+</tbody></table></div>
+<h3 id="82-import-csv-massif">8.2 Import CSV Massif</h3>
+<p>OrdiveX supporte l'importation de <strong>50 000+ produits</strong> via CSV :</p>
+<p class="step">Aller dans Catalogue  bouton "Importer CSV"</p>
+<p class="step">Slectionner le fichier (colonnes : name, dci, brand, form, buyPrice, sellPrice, minStock...)</p>
+<p class="step">Le systme traite par <strong>lots de 100</strong> pour viter les blocages</p>
+<p class="step">Rapport d'import affich a la fin (succs, doublons, erreurs)</p>
+<h3 id="83-kpis-du-catalogue-dashboard-inventaire">8.3 KPIs du Catalogue (Dashboard Inventaire)</h3>
+<div class="table-wrap"><table><thead><tr>
+<th>KPI</th>
+<th>Calcul</th>
+</tr></thead><tbody>
+<tr>
+<td>Valeur Stock (Achat)</td>
+<td>(purchasePrice  quantit) pour tous les produits</td>
+</tr>
+<tr>
+<td>Valeur Stock (Vente)</td>
+<td>(salePrice  quantit) pour tous les produits</td>
+</tr>
+<tr>
+<td>Bnfice Potentiel</td>
+<td>Valeur Vente - Valeur Achat</td>
+</tr>
+<tr>
+<td>Produits en Rupture</td>
+<td>Nombre de produits avec stock = 0</td>
+</tr>
+<tr>
+<td>Produits en Stock Bas</td>
+<td>Nombre de produits avec stock < minStock</td>
+</tr>
+<tr>
+<td>Marge Moyenne</td>
+<td>Moyenne de ((salePrice - purchasePrice) / salePrice  100)</td>
+</tr>
+</tbody></table></div>
+<h3 id="84-notice-mdicale">8.4 Notice Mdicale</h3>
+<p>Chaque produit peut avoir une notice avec :</p>
+<ul>
+<li>Posologie, Contre-indications, Effets indsirables</li>
+<li>Prcautions d'emploi, Interactions</li>
+<li>Accessible via le bouton  dans le POS ou la fiche produit</li>
+</ul>
+<hr>
+<h2 id="chapitre-9-gestion-des-stocks-fefo">Chapitre 9  Gestion des Stocks & FEFO</h2>
+<h3 id="91-protocole-fefo">9.1 Protocole FEFO</h3>
+<p><strong>FEFO = First Expired, First Out</strong>  Le lot avec la date d'expiration la plus proche est vendu en premier.</p>
+<pre><code class="language-text">
+Lot A : Expire le 2026-08-15  20 units
+Lot B : Expire le 2027-01-10  50 units
+Lot C : Expire le 2026-06-01  5 units    Vendu en premier !
+
+Vente de 8 units  5 du Lot C + 3 du Lot A
+</code></pre>
+<h3 id="92-mouvements-de-stock">9.2 Mouvements de Stock</h3>
+<p>Chaque modification de stock cre un mouvement traable :</p>
+<div class="table-wrap"><table><thead><tr>
+<th>Type</th>
+<th>Dclencheur</th>
+<th>Effet</th>
+</tr></thead><tbody>
+<tr>
+<td>`entry`</td>
+<td>Rception fournisseur</td>
+<td>+quantit</td>
+</tr>
+<tr>
+<td>`sale`</td>
+<td>Vente valide</td>
+<td>-quantit</td>
+</tr>
+<tr>
+<td>`return`</td>
+<td>Retour client</td>
+<td>+quantit</td>
+</tr>
+<tr>
+<td>`adjustment`</td>
+<td>Inventaire manuel</td>
+<td>quantit</td>
+</tr>
+<tr>
+<td>`destruction`</td>
+<td>PV de destruction</td>
+<td>-quantit</td>
+</tr>
+</tbody></table></div>
+<h3 id="93-inventaire">9.3 Inventaire</h3>
+<p>L'inventaire dans OrdiveX permet de :</p>
+<p class="step">Voir tous les produits avec stock thorique vs stock physique</p>
+<p class="step">Corriger les carts (ajustement + ou -)</p>
+<p class="step">Gnrer un rapport imprimable pagin (500 produits/page)</p>
+<h3 id="94-alertes-stock">9.4 Alertes Stock</h3>
+<div class="table-wrap"><table><thead><tr>
+<th>Type</th>
+<th>Condition</th>
+<th>Couleur</th>
+</tr></thead><tbody>
+<tr>
+<td>Rupture</td>
+<td>stock = 0</td>
+<td>Rouge</td>
+</tr>
+<tr>
+<td>Stock bas</td>
+<td>0 < stock  minStock</td>
+<td>Orange</td>
+</tr>
+<tr>
+<td>Stock OK</td>
+<td>stock > minStock</td>
+<td>Vert</td>
+</tr>
+</tbody></table></div>
+<hr>
+<h2 id="chapitre-10-caisse-journalire-clture">Chapitre 10  Caisse Journalire & Clture</h2>
+<h3 id="101-vue-caisse">10.1 Vue Caisse</h3>
+<p>La page Caisse affiche en temps rel :</p>
+<ul>
+<li><strong>Total des ventes du jour</strong> (CA brut)</li>
+<li><strong>Rpartition par mode de paiement</strong> (Espces, Orange Money, MTN MoMo, Crdit, Assurance)</li>
+<li><strong>Graphique Donut</strong> interactif avec tooltip au survol</li>
+<li><strong>Liste de toutes les ventes</strong> du jour avec dtails</li>
+<li><strong>Mouvements manuels</strong> (entres/sorties de caisse)</li>
+</ul>
+<h3 id="102-mouvements-manuels">10.2 Mouvements Manuels</h3>
+<p>Un admin/pharmacien peut ajouter des entres/sorties manuelles :</p>
+<ul>
+<li><strong>Entre</strong> : Fond de caisse, encaissement dette, autre revenu</li>
+<li><strong>Sortie</strong> : Achat fournitures, frais divers, retrait</li>
+</ul>
+<h3 id="103-clture-de-caisse">10.3 Clture de Caisse</h3>
+<p><strong>Procdure :</strong></p>
+<p class="step">Cliquer "Clturer la caisse"</p>
+<p class="step">Saisir le <strong>montant physique compt</strong> (espces en caisse)</p>
+<p class="step">Le systme calcule l'<strong>cart de caisse</strong> :</p>
+<ul>
+<li>cart = Montant compt - Total thorique espces</li>
+<li>cart = 0   Caisse juste</li>
+<li>cart > 0   Excdent</li>
+<li>cart < 0   Manquant</li>
+</ul>
+<p><strong>Aprs clture :</strong></p>
+<ul>
+<li>Aucune vente ne peut tre enregistre pour cette journe</li>
+<li>Un rapport de caisse est disponible dans le Centre d'Impression</li>
+<li>L'enregistrement de type <code>closure</code> est cr dans <code>cashRegister</code></li>
+</ul>
+<h3 id="104-rgle-critique">10.4 Rgle Critique</h3>
+<blockquote><strong>Une fois la caisse clture, le POS est BLOQU pour le jour.</strong> Toute tentative de vente affiche : "La caisse est clture pour aujourd'hui."</blockquote>
+<hr>
+<h2 id="chapitre-11-ordonnances">Chapitre 11  Ordonnances</h2>
+<h3 id="111-cration">11.1 Cration</h3>
+<p>Une ordonnance contient :</p>
+<ul>
+<li><strong>Mdecin prescripteur</strong> (nom, spcialit)</li>
+<li><strong>Patient</strong> (li depuis les dossiers)</li>
+<li><strong>Date de prescription</strong></li>
+<li><strong>Liste des mdicaments</strong> avec posologie et dure</li>
+<li><strong>Statut</strong> : en attente  valide  dispense</li>
+</ul>
+<h3 id="112-liaison-au-pos">11.2 Liaison au POS</h3>
+<p>Au POS, activer le toggle "Ordonnance" puis :</p>
+<p class="step">"Lier une ordonnance"  slectionner dans la liste</p>
+<p class="step">Les produits de l'ordonnance sont <strong>automatiquement ajouts</strong> au panier</p>
+<p class="step">Les produits en rupture sont signals</p>
+<p class="step">Le pharmacien peut valider pharmaceutiquement l'ordonnance</p>
+<h3 id="113-statuts">11.3 Statuts</h3>
+<div class="table-wrap"><table><thead><tr>
+<th>Statut</th>
+<th>Signification</th>
+</tr></thead><tbody>
+<tr>
+<td>`pending`</td>
+<td>En attente de dispensation</td>
+</tr>
+<tr>
+<td>`validated`</td>
+<td>Valide par le pharmacien</td>
+</tr>
+<tr>
+<td>`dispensed`</td>
+<td>Dispense (vente effectue)</td>
+</tr>
+<tr>
+<td>`cancelled`</td>
+<td>Annule</td>
+</tr>
+</tbody></table></div>
+<hr>
+<h2 id="chapitre-12-dossiers-patients">Chapitre 12  Dossiers Patients</h2>
+<h3 id="121-fiche-patient">12.1 Fiche Patient</h3>
+<div class="table-wrap"><table><thead><tr>
+<th>Champ</th>
+<th>Description</th>
+</tr></thead><tbody>
+<tr>
+<td>Nom complet</td>
+<td>Obligatoire</td>
+</tr>
+<tr>
+<td>Tlphone</td>
+<td>Pour SMS et contact</td>
+</tr>
+<tr>
+<td>Adresse</td>
+<td>Optionnel</td>
+</tr>
+<tr>
+<td>Date de naissance</td>
+<td>Optionnel</td>
+</tr>
+<tr>
+<td>Sexe</td>
+<td>Homme / Femme</td>
+</tr>
+<tr>
+<td>Allergies</td>
+<td>**CRITIQUE**  dclenche les alertes au POS</td>
+</tr>
+<tr>
+<td>Statut</td>
+<td>Souscripteur principal / Ayant droit</td>
+</tr>
+<tr>
+<td>Notes</td>
+<td>Informations libres</td>
+</tr>
+</tbody></table></div>
+<h3 id="122-alertes-allergies">12.2 Alertes Allergies</h3>
+<p>Si un patient a "Pnicilline" dans ses allergies et qu'on ajoute de l'Amoxicilline au panier :</p>
+<pre><code class="language-text">
+ ALERTE ALLERGIE
+Ce patient est allergique a : Pnicilline
+L'Amoxicilline contient un driv de pnicilline.
+Voulez-vous quand mme ajouter ce produit ?
+[Annuler] [Ajouter malgr tout]
+</code></pre>
+<h3 id="123-historique-patient">12.3 Historique Patient</h3>
+<p>Depuis la fiche patient, on voit :</p>
+<ul>
+<li>Toutes les ventes passes (avec montants et dtails)</li>
+<li>Les ordonnances lies</li>
+<li>Les crdits en cours et leur montant</li>
+</ul>
+<h3 id="124-import-csv-patients">12.4 Import CSV Patients</h3>
+<p>Mme logique que pour les produits  import massif avec colonnes : name, phone, address, sex, allergies.</p>
+<hr>
+<h2 id="chapitre-13-fournisseurs-bons-de-commande">Chapitre 13  Fournisseurs & Bons de Commande</h2>
+<h3 id="131-fiche-fournisseur">13.1 Fiche Fournisseur</h3>
+<ul>
+<li>Nom, tlphone, email, adresse</li>
+<li><strong>Score fournisseur</strong> : valuation de la fiabilit (livraisons a temps, qualit)</li>
+<li>Historique des commandes</li>
+</ul>
+<h3 id="132-flux-de-commande">13.2 Flux de Commande</h3>
+<pre><code class="language-text">
+1. Crer un bon de commande  Statut : "Brouillon"
+2. Ajouter les produits et quantits souhaites
+3. Envoyer la commande  Statut : "Envoye"
+4. Rceptionner la livraison :
+   - Vrifier les quantits reues vs commandes
+   - Saisir les numros de lot et dates de premption
+   - Valider  Statut : "Rceptionne"
+5. Le stock est automatiquement mis a jour (+entres)
+6. Les mouvements de stock sont crs
+</code></pre>
+<h3 id="133-rception-partielle">13.3 Rception Partielle</h3>
+<p>Si le fournisseur livre 80 botes sur 100 commandes :</p>
+<ul>
+<li>Saisir 80 a la rception</li>
+<li>Le bon passe en "Partiellement rceptionn"</li>
+<li>Les 20 restantes apparaissent comme "En attente"</li>
+</ul>
+<hr>
+<h2 id="chapitre-14-historique-des-ventes-crdits">Chapitre 14  Historique des Ventes & Crdits</h2>
+<h3 id="141-liste-des-ventes">14.1 Liste des Ventes</h3>
+<p>Toutes les ventes sont affiches avec :</p>
+<ul>
+<li>Numro de vente, date, heure</li>
+<li>Patient (si identifi)</li>
+<li>Montant total</li>
+<li>Mode de paiement (badge couleur)</li>
+<li>Statut :  Paye,  Crdit en cours,  Retourne</li>
+</ul>
+<h3 id="142-dtail-dune-vente">14.2 Dtail d'une Vente</h3>
+<p>En cliquant sur une vente :</p>
+<ul>
+<li>Liste complte des articles (nom, quantit, prix unitaire, sous-total)</li>
+<li>Informations patient</li>
+<li>Vendeur et Prparateur (double traabilit)</li>
+<li>Ordonnance lie (si applicable)</li>
+<li>Boutons : Imprimer, Retour</li>
+</ul>
+<h3 id="143-encaissement-de-dettes">14.3 Encaissement de Dettes</h3>
+<p>Pour les ventes a crdit (<code>status: 'pending'</code>) :</p>
+<p class="step">Ouvrir la vente dans l'historique</p>
+<p class="step">Cliquer "Encaisser la dette"</p>
+<p class="step">Saisir le mode de paiement</p>
+<p class="step">La vente passe en <code>status: 'completed'</code></p>
+<h3 id="144-export-csv">14.4 Export CSV</h3>
+<p>Bouton "Exporter"  tlcharge un CSV avec toutes les ventes filtres, compatible Excel.</p>
+<hr>
+<h2 id="chapitre-15-retours-de-mdicaments">Chapitre 15  Retours de Mdicaments</h2>
+<h3 id="151-procdure">15.1 Procdure</h3>
+<p class="step">Aller dans Historique des Ventes  trouver la vente</p>
+<p class="step">Cliquer "Retour"</p>
+<p class="step">Slectionner les articles a retourner (tout ou partie)</p>
+<p class="step">Choisir le motif : erreur, premption, contre-indication, autre</p>
+<p class="step">Choisir le mode de remboursement : Espces, Mobile Money, Avoir</p>
+<p class="step">Valider</p>
+<h3 id="152-effets-automatiques">15.2 Effets Automatiques</h3>
+<ul>
+<li>Le stock est <strong>rajust a la hausse</strong> pour les articles retourns</li>
+<li>Un mouvement de type <code>return</code> est cr</li>
+<li>La vente originale est marque comme "partiellement retourne" ou "retourne"</li>
+<li>Le montant de remboursement est trac</li>
+</ul>
+<h3 id="153-conditions">15.3 Conditions</h3>
+<ul>
+<li>Seules les ventes <strong>non annules</strong> peuvent faire l'objet d'un retour</li>
+<li>Un article dja retourn ne peut pas tre retourn une seconde fois</li>
+<li>Le retour est trac dans le journal d'audit</li>
+</ul>
+<hr>
+<h2 id="chapitre-16-paiements-espces-mobile-money-assurance-mixte-crdit">Chapitre 16  Paiements : Espces, Mobile Money, Assurance, Mixte, Crdit</h2>
+<h3 id="161-espces">16.1 Espces</h3>
+<p>Le mode par dfaut.</p>
+<ul>
+<li>L'utilisateur saisit le <strong>Montant encaiss</strong>.</li>
+<li>Le systme calcule et affiche automatiquement la <strong>Monnaie a rendre</strong>.</li>
+<li>Des <strong>raccourcis rapides</strong> (ex: billets de 10 000, 20 000, 50 000, 100 000 GNF) apparaissent pour faciliter la saisie.</li>
+</ul>
+<h3 id="162-mobile-money-orange-money-mtn-momo">16.2 Mobile Money (Orange Money & MTN MoMo)</h3>
+<p>Intgration via le module <code>mobile-money.js</code>.</p>
+<p class="step">Slectionner O. Money ou MTN MoMo.</p>
+<p class="step">Saisir le <strong>Numro de tlphone</strong> du client.</p>
+<p class="step">Cliquer "Envoyer la demande de paiement".</p>
+<p class="step">Le client reoit un <strong>USSD Push</strong> (popup sur son tlphone) pour entrer son code PIN.</p>
+<p class="step">Le systme interroge l'API en boucle (polling) jusqu'a validation ou chec.</p>
+<p class="step">Si succs  La vente est valide.</p>
+<h3 id="163-paiement-mixte-combin">16.3 Paiement Mixte (Combin)</h3>
+<p>Utile quand le client n'a pas assez d'espces et complte par Mobile Money.</p>
+<ul>
+<li>Permet de diviser le total en <strong>deux montants</strong> et <strong>deux mthodes</strong> (ex: Espces + Orange Money).</li>
+<li>La somme des deux montants doit tre gale (ou suprieure, pour la monnaie) au total.</li>
+</ul>
+<h3 id="164-assurance-tiers-payant">16.4 Assurance & Tiers Payant</h3>
+<p>Conu pour les prises en charge entreprises ou assurances prives.</p>
+<ul>
+<li><strong>Organisme</strong> : Saisir le nom de l'assurance (ex: NSIA).</li>
+<li><strong>Rf.</strong> : Numro du bon de prise en charge.</li>
+<li><strong>Part Entreprise</strong> : Montant couvert par l'assurance (reste en dette / crdit).</li>
+<li><strong>Part Patient</strong> (Ticket modrateur) : Total - Part Entreprise. Le patient paie ce reste a charge immdiatement (Espces ou Mobile Money).</li>
+</ul>
+<h3 id="165-vente-a-crdit">16.5 Vente a Crdit</h3>
+<ul>
+<li><strong>Patient Obligatoire</strong> : Impossible de faire crdit a un client "Anonyme".</li>
+<li><strong>Date d'chance</strong> : A fixer (par dfaut +30 jours).</li>
+<li>La vente est enregistre avec le statut <code>pending</code>.</li>
+<li>Le montant s'ajoute a la dette du patient.</li>
+</ul>
+<hr>
+<h2 id="chapitre-17-interactions-mdicamenteuses-alertes-allergies">Chapitre 17  Interactions Mdicamenteuses & Alertes Allergies</h2>
+<h3 id="171-base-de-connaissances">17.1 Base de Connaissances</h3>
+<p>OrdiveX intgre une base statique des <strong>30 combinaisons critiques</strong> les plus dangereuses (ex: mthotrexate + trimthoprime, warfarine + aspirine).</p>
+<ul>
+<li>Moteur de dtection : <code>checkDrugInteractions()</code> dans <code>pos.js</code>.</li>
+<li>Se base sur le champ <strong>DCI</strong> des produits. Il est donc crucial de bien renseigner les DCI.</li>
+</ul>
+<h3 id="172-niveau-dalertes">17.2 Niveau d'Alertes</h3>
+<div class="table-wrap"><table><thead><tr>
+<th>Niveau</th>
+<th>Action</th>
+<th>Message type</th>
+</tr></thead><tbody>
+<tr>
+<td>`grave`</td>
+<td>Alerte Rouge</td>
+<td>"Risque d'hmorragie svre."</td>
+</tr>
+<tr>
+<td>`modr`</td>
+<td>Alerte Orange</td>
+<td>"Absorption rduite."</td>
+</tr>
+</tbody></table></div>
+<h3 id="173-dclenchement">17.3 Dclenchement</h3>
+<p>L'alerte se dclenche au moment o l'utilisateur clique sur un produit pour l'ajouter au panier, si ce produit interagit avec un produit <strong>dja prsent</strong> dans le panier.</p>
+<p>L'utilisateur doit confirmer ("Ajouter malgr tout") ou annuler.</p>
+<hr>
+<h2 id="chapitre-18-dconditionnement-vente-a-lunit">Chapitre 18  Dconditionnement (Vente a l'Unit)</h2>
+<h3 id="181-configuration-produit">18.1 Configuration Produit</h3>
+<p>Pour qu'un produit soit vendu a l'unit, il doit avoir :</p>
+<ul>
+<li><code>allowUnitSale: true</code></li>
+<li><code>unitsPerBox</code>: Nombre d'units par plaquette (ex: 10)</li>
+<li><code>subUnitsPerBox</code>: Nombre de plaquettes par bote (ex: 2)</li>
+<li><code>unitPrice</code>: Prix de vente a l'unit</li>
+<li><code>subUnitPrice</code>: Prix de vente a la plaquette</li>
+</ul>
+<h3 id="182-impact-au-pos">18.2 Impact au POS</h3>
+<p>Au lieu d'un seul bouton, le POS affiche trois boutons :</p>
+<ul>
+<li><strong>Bote</strong></li>
+<li><strong>Plaquette</strong></li>
+<li><strong>Unit</strong></li>
+</ul>
+<h3 id="183-gestion-du-stock">18.3 Gestion du Stock</h3>
+<p>Le stock interne (<code>stock</code> dans IndexedDB) est gr en <strong>Units de Base</strong>.</p>
+<ul>
+<li>Si une bote contient 20 units, rceptionner 1 bote ajoute <code>20</code> au stock interne.</li>
+<li>Vendre 1 unit soustrait <code>1</code>.</li>
+<li>Vendre 1 bote soustrait <code>20</code>.</li>
+<li>L'affichage dans le POS reconvertit les units en "Botes + Units" (ex: "1 bte + 5u").</li>
+</ul>
+<hr>
+<h2 id="chapitre-19-centre-dimpression">Chapitre 19  Centre d'Impression</h2>
+<h3 id="191-modles-disponibles">19.1 Modles Disponibles</h3>
+<p>OrdiveX propose plusieurs modles d'impression gnrs dynamiquement en HTML/CSS et imprims via le navigateur :</p>
+<ul>
+<li><strong>Ticket de Caisse</strong> (Format Thermique 58mm ou 80mm) : Reu classique de vente.</li>
+<li><strong>Facture A4 Pro</strong> : Facture dtaille avec logo, coordonnes, informations du patient, et de l'assurance.</li>
+<li><strong>Rapport de Caisse (Z)</strong> : Clture journalire avec ventilation des encaissements.</li>
+<li><strong>Bordereau de Livraison / Commande</strong> : Pour les fournisseurs.</li>
+<li><strong>Rapport d'Inventaire</strong> : Liste des produits avec espaces pour cocher.</li>
+</ul>
+<h3 id="192-configuration-imprimante">19.2 Configuration Imprimante</h3>
+<ul>
+<li>Se gre via les paramtres du systme d'exploitation et la fentre d'impression du navigateur (Ctrl+P).</li>
+<li>Il est recommand de dsactiver les marges et les en-ttes/pieds de page du navigateur pour les tickets thermiques.</li>
+</ul>
+<hr>
+<h2 id="chapitre-20-traabilit-pharmacovigilance">Chapitre 20  Traabilit & Pharmacovigilance</h2>
+<h3 id="201-mouvements-audit-trail">20.1 Mouvements (Audit Trail)</h3>
+<p>Absolument <strong>tout</strong> est trac dans la table <code>movements</code>.</p>
+<ul>
+<li>Entres, sorties, ventes, retours, ajustements, destructions.</li>
+<li>Avec Horodatage, Utilisateur, Motif, Quantit avant/aprs.</li>
+</ul>
+<h3 id="202-registre-des-stupfiants-tableau-bc">20.2 Registre des Stupfiants (Tableau B/C)</h3>
+<p>Pour les produits marqus <code>isControlled = true</code> :</p>
+<ul>
+<li>Un registre spar est gnrable pour l'inspection sanitaire.</li>
+<li>Trace l'ordonnance (<code>prescriptionRef</code>) et le mdecin, informations obligatoires pour la dispensation.</li>
+</ul>
+<h3 id="203-dclaration-anss-pharmacovigilance">20.3 Dclaration ANSS (Pharmacovigilance)</h3>
+<p>Intgration prvue (module <code>mobile-money.js</code> / section ANSS) pour envoyer des rapports d'effets indsirables directement a l'Agence Nationale de Scurit Sanitaire (Guine).</p>
+<hr>
+<h1 id="partie-iii-analytique-intelligence">PARTIE III  ANALYTIQUE & INTELLIGENCE</h1>
+<hr>
+<h2 id="chapitre-21-tableau-de-bord">Chapitre 21  Tableau de Bord</h2>
+<h3 id="211-vue-densemble">21.1 Vue d'Ensemble</h3>
+<p>Le <code>dashboard.js</code> est l'cran d'accueil. Il agrge les donnes :</p>
+<ul>
+<li><strong>KPIs du jour</strong> : Chiffre d'Affaires, Bnfice Brut, Nombre de ventes, Panier Moyen.</li>
+<li><strong>Graphiques</strong> : volution du CA sur 7/30 jours (via Chart.js ou rendu SVG custom).</li>
+<li><strong>Raccourcis</strong> : Vente rapide, Nouvel arrivage.</li>
+</ul>
+<h3 id="212-rafrachissement">21.2 Rafrachissement</h3>
+<p>Li au systme de LiveSync (<code>db.js</code>), le tableau de bord se met a jour en temps rel a chaque vente valide sur le mme appareil, ou reue du Cloud (Supabase).</p>
+<hr>
+<h2 id="chapitre-22-mtriques-business-intelligence">Chapitre 22  Mtriques Business Intelligence</h2>
+<h3 id="221-kpis-avancs">22.1 KPIs Avancs</h3>
+<p>Module <code>metrics.js</code> (pour Admin) calculant :</p>
+<ul>
+<li><strong>Rotation de Stock (Turnover Ratio)</strong> : Vitesse a laquelle le stock est coul et renouvel.</li>
+<li><strong>Taux de Rupture</strong> : % de produits a 0.</li>
+<li><strong>Sant du Stock</strong> : Valorisation du stock dormant vs stock actif.</li>
+<li><strong>Marge Globale</strong> : Marge nette moyenne sur la priode.</li>
+</ul>
+<h3 id="222-analyse-comparative">22.2 Analyse Comparative</h3>
+<p>Comparaison des performances :</p>
+<ul>
+<li>Ce mois vs Mois prcdent.</li>
+<li>Affichage des pourcentages de croissance (+X% ou -Y%).</li>
+</ul>
+<hr>
+<h2 id="chapitre-23-rapports-analytique-avance">Chapitre 23  Rapports & Analytique Avance</h2>
+<h3 id="231-top-ventes">23.1 Top Ventes</h3>
+<p>Dans <code>sales.js</code> (onglet Analytique) :</p>
+<ul>
+<li>Classement des mdicaments les plus vendus (en volume et en CA).</li>
+<li>Classement des familles thrapeutiques les plus performantes.</li>
+<li>Rpartition des modes de paiement.</li>
+</ul>
+<h3 id="232-export-comptable">23.2 Export Comptable</h3>
+<p>Gnration de fichiers CSV agrgs par jour/mois pour l'expert-comptable, avec sparation du CA HT / TTC (si TVA applicable) et des dettes assurances.</p>
+<hr>
+<h2 id="chapitre-24-centre-dalertes">Chapitre 24  Centre d'Alertes</h2>
+<h3 id="241-types-dalertes">24.1 Types d'Alertes</h3>
+<p>Le moteur (<code>alerts-engine.js</code>) scanne la base en arrire-plan et remonte les notifications (<code>alerts.js</code>) :</p>
+<ul>
+<li><strong>Premptions</strong> : Lots expirant dans les 30, 60, 90 jours.</li>
+<li><strong>Stock</strong> : Produits sous le seuil critique d'alerte (<code>minStock</code>).</li>
+<li><strong>Anomalies</strong> : Marges ngatives (Prix d'achat > Prix de vente).</li>
+<li><strong>Dettes</strong> : Crdits patients chus.</li>
+</ul>
+<h3 id="242-actions-depuis-lalerte">24.2 Actions depuis l'Alerte</h3>
+<ul>
+<li>Les alertes sont cliquables.</li>
+<li>Ex: Cliquer sur une alerte de premption permet de gnrer directement un PV de retrait du stock.</li>
+</ul>
+<h1 id="partie-iv-administration-maintenance">PARTIE IV  ADMINISTRATION & MAINTENANCE</h1>
+<hr>
+<h2 id="chapitre-25-paramtres-configuration">Chapitre 25  Paramtres & Configuration</h2>
+<h3 id="251-rglages-gnraux">25.1 Rglages Gnraux</h3>
+<p>Grs dans <code>settings.js</code>.</p>
+<ul>
+<li><strong>Informations Pharmacie</strong> : Nom, Adresse, Tlphone, NIF/RCCM (apparaissent sur les factures).</li>
+<li><strong>Monnaie</strong> : Symbole (GNF, XOF) et formatage (ex: 10 000 GNF).</li>
+<li><strong>Fuseau Horaire</strong> : Pour l'horodatage des ventes.</li>
+<li><strong>Politique de Retour</strong> : Autorisation et dlai de retour (en jours).</li>
+</ul>
+<h3 id="252-priphriques">25.2 Priphriques</h3>
+<ul>
+<li>Configuration de l'imprimante par dfaut (A4 vs Thermique).</li>
+<li>Scanners de codes-barres : La plupart des douchettes fonctionnent en mode mulation clavier. Pas de driver spcifique requis, OrdiveX capte la saisie sur le champ de recherche POS.</li>
+</ul>
+<hr>
+<h2 id="chapitre-26-gestion-des-utilisateurs-rles">Chapitre 26  Gestion des Utilisateurs & Rles</h2>
+<h3 id="261-cration-et-modification">26.1 Cration et Modification</h3>
+<ul>
+<li>Uniquement par l'Admin.</li>
+<li>Rles : <code>admin</code>, <code>pharmacien</code>, <code>caissier</code>.</li>
+<li>PIN obligatoire pour tout nouvel utilisateur (4 chiffres).</li>
+<li>Option de suspension de compte (sans perte de l'historique d'audit li).</li>
+</ul>
+<h3 id="262-reset-de-mot-de-passe-pin">26.2 Reset de Mot de Passe / PIN</h3>
+<ul>
+<li>Si un utilisateur oublie son PIN, l'Admin peut le rinitialiser depuis les Paramtres.</li>
+<li>Si l'Admin perd son accs... intervention technique directe dans IndexedDB ncessaire.</li>
+</ul>
+<hr>
+<h2 id="chapitre-27-synchronisation-cloud-supabase">Chapitre 27  Synchronisation Cloud (Supabase)</h2>
+<h3 id="271-modle-offlinefirst">27.1 Modle Offline-First</h3>
+<p>Toutes les critures se font d'abord dans IndexedDB.</p>
+<p>Le moteur <code>LiveSync</code> (<code>db.js</code> ligne ~800) coute les changements locaux et les pousse vers Supabase en arrire-plan.</p>
+<h3 id="272-file-dattente-syncqueue">27.2 File d'attente (SyncQueue)</h3>
+<ul>
+<li>Si hors-ligne, les modifications s'empilent dans le store <code>syncQueue</code>.</li>
+<li>Au retour de la connexion, OrdiveX dpile la queue et l'envoie au serveur par lots (batchs) pour ne pas saturer le rseau.</li>
+</ul>
+<h3 id="273-realtime-multiappareils">27.3 Realtime (Multi-appareils)</h3>
+<ul>
+<li>Supabase Broadcast et PostgreSQL CDC informent les autres appareils des modifications (ex: Vente sur la Caisse 1  Le stock baisse instantanment sur la Caisse 2).</li>
+</ul>
+<hr>
+<h2 id="chapitre-28-sauvegarde-restauration">Chapitre 28  Sauvegarde & Restauration</h2>
+<h3 id="281-backup-json-local">28.1 Backup JSON Local</h3>
+<ul>
+<li>Fonction vitale (<code>settings.js</code> / <code>db.js</code>).</li>
+<li>Exporte l'intgralit d'IndexedDB dans un seul fichier JSON (chiffr optionnellement).</li>
+<li>faire quotidiennement si pas de Cloud activ.</li>
+</ul>
+<h3 id="282-restauration">28.2 Restauration</h3>
+<ul>
+<li>Remplace toutes les donnes actuelles par celles du backup.</li>
+<li><strong>Attention</strong> : Action destructive. Protge par un mot de passe Admin.</li>
+</ul>
+<hr>
+<h2 id="chapitre-29-sms-notifications">Chapitre 29  SMS & Notifications</h2>
+<h3 id="291-provider">29.1 Provider</h3>
+<ul>
+<li><strong>AfricasTalking</strong> : Service utilis.</li>
+<li>Configurable dans Paramtres (Cl API, Username, Sender ID).</li>
+</ul>
+<h3 id="292-cas-dusage">29.2 Cas d'Usage</h3>
+<ul>
+<li><strong>Client</strong> : Envoi de reu par SMS, rappel de prise de mdicament, souhait d'anniversaire.</li>
+<li><strong>Admin</strong> : Alerte de clture de caisse avec le CA du jour envoy au propritaire.</li>
+</ul>
+<hr>
+<h2 id="chapitre-30-naomie-ai-assistante-virtuelle">Chapitre 30  Naomie AI  Assistante Virtuelle</h2>
+<h3 id="301-fonctionnalit">30.1 Fonctionnalit</h3>
+<p>Naomie est le chatbot intelligent intgr (<code>supportWidget.js</code>).</p>
+<ul>
+<li>Rpond aux questions sur l'utilisation du logiciel.</li>
+<li><strong>Queries dynamiques (v4)</strong> : Sait interroger IndexedDB pour donner :</li>
+<li>Le CA du jour en direct.</li>
+<li>Le nombre de patients.</li>
+<li>Les produits en rupture.</li>
+<li>La valeur du stock.</li>
+</ul>
+<h3 id="302-vrification-des-mises-a-jour">30.2 Vrification des Mises a jour</h3>
+<ul>
+<li>Demander a Naomie : "Y a t-il une mise a jour ?"</li>
+<li>Elle lit le fichier <code>version.json</code> distant et compare avec l'actuel.</li>
+</ul>
+<hr>
+<h2 id="chapitre-31-module-de-stabilit-gestion-derreurs">Chapitre 31  Module de Stabilit & Gestion d'Erreurs</h2>
+<h3 id="311-fichier-stabilityjs">31.1 Fichier `stability.js`</h3>
+<p>Introduit en v9.4.1. Charg en tout dernier dans <code>index.html</code>.</p>
+<p>C'est le <strong>bouclier global</strong>.</p>
+<h3 id="312-protections">31.2 Protections</h3>
+<p class="step"><strong>Catch global</strong> : <code>window.addEventListener('error')</code> et <code>unhandledrejection</code> empchent les crashs et stockent les logs.</p>
+<p class="step"><strong>Quota DB</strong> : Alerte propre si IndexedDB atteint sa limite (QuotaExceededError).</p>
+<p class="step"><strong>Async Wrappers</strong> : Les fonctions critiques (<code>validerVente</code>, rendu de pages) sont wrappes en try-catch.</p>
+<p class="step"><strong>SafeMath</strong> : <code>safeDiv</code> et <code>safeNum</code> prviennent les divisions par zro et les NaN qui corrompent les donnes financires.</p>
+<p class="step"><strong>SafeJSON</strong> : <code>JSON.parse</code> est toujours wrapp (vite les crashs si les paramtres corrompus).</p>
+<p class="step"><strong>Watchdog</strong> : Surveille la consommation RAM et Stockage (<code>navigator.storage</code>).</p>
+<hr>
+<h2 id="chapitre-32-vrification-de-version-mises-a-jour">Chapitre 32  Vrification de Version & Mises a Jour</h2>
+<ul>
+<li>L'app tourne sur le navigateur. Les mises a jour sont dployes sur le web (GitHub Pages).</li>
+<li>Le navigateur met en cache (<code>ServiceWorker</code>) pour le fonctionnement hors-ligne.</li>
+<li><code>stability.js</code> poll <code>version.json</code> toutes les 4 heures.</li>
+<li>Si mise a jour dispo  Toast non intrusif "Nouvelle version dispo, rechargez avec Ctrl+Shift+R".</li>
+</ul>
+<hr>
+<h1 id="partie-v-exploitation">PARTIE V  EXPLOITATION</h1>
+<hr>
+<h2 id="chapitre-33-onboarding-nouvelle-pharmacie">Chapitre 33  Onboarding Nouvelle Pharmacie</h2>
+<p class="step">Ouvrir l'URL sur l'appareil.</p>
+<p class="step">Saisir les infos de la pharmacie.</p>
+<p class="step">Crer le compte Admin principal (mot de passe + PIN).</p>
+<p class="step">Importer le catalogue CSV.</p>
+<p class="step">Configurer la synchronisation Cloud Supabase.</p>
+<p class="step">L'app est prte au POS.</p>
+<hr>
+<h2 id="chapitre-34-procdures-de-maintenance">Chapitre 34  Procdures de Maintenance</h2>
+<h3 id="341-nettoyage-des-logs">34.1 Nettoyage des Logs</h3>
+<ul>
+<li>Les logs d'audit et anciennes ventes (plus de 5 ans) peuvent tre purgs via les Paramtres pour librer du quota IndexedDB.</li>
+</ul>
+<h3 id="342-diagnostic">34.2 Diagnostic</h3>
+<ul>
+<li>Taper <code>OrdiveXDiag.errors()</code> dans la console du navigateur (F12) pour voir les 20 dernires erreurs invisibles.</li>
+<li><code>OrdiveXDiag.storage()</code> pour voir le quota utilis.</li>
+</ul>
+<hr>
+<h2 id="chapitre-35-rsolution-de-problmes-troubleshooting">Chapitre 35  Rsolution de Problmes (Troubleshooting)</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Problme</th>
+<th>Cause Possible</th>
+<th>Solution</th>
+</tr></thead><tbody>
+<tr>
+<td>**cran Blanc**</td>
+<td>Corruption cache / Erreur JS critique</td>
+<td>Maj+F5. Si persistant, vider cache navigateur.</td>
+</tr>
+<tr>
+<td>**Stock incorrect**</td>
+<td>Synchro Cloud non passe</td>
+<td>Vrifier le badge Wi-Fi. Faire "Forcer Synchro".</td>
+</tr>
+<tr>
+<td>**Vente impossible**</td>
+<td>Caisse clture ou erreur</td>
+<td>Ouvrir la console (F12), taper `OrdiveXDiag.errors()`.</td>
+</tr>
+<tr>
+<td>**Lenteur POS**</td>
+<td>Trop de produits en RAM</td>
+<td>Utiliser la recherche, limiter la pagination.</td>
+</tr>
+</tbody></table></div>
+<hr>
+<h2 id="chapitre-36-raccourcis-clavier">Chapitre 36  Raccourcis Clavier</h2>
+<ul>
+<li><strong>F2</strong> : Lancer le scanner (focus champ recherche)</li>
+<li><strong>F5</strong> / <strong>Entre</strong> : Valider la vente</li>
+<li><strong>Echap</strong> : Vider le panier / Annuler</li>
+<li><strong>Ctrl+Shift+R</strong> : Recharger l'app (mise a jour cache)</li>
+<li><strong>Ctrl+K</strong> : Ouvrir la Palette de Commandes Rapides</li>
+</ul>
+<hr>
+<h2 id="chapitre-37-limites-connues-roadmap">Chapitre 37  Limites Connues & Roadmap</h2>
+<ul>
+<li><strong>Panier en attente volatile</strong> : Si on rafrachit la page, le panier mis en attente disparat (stock en RAM).</li>
+<li><strong>Quota de stockage</strong> : Les navigateurs limitent IndexedDB (souvent ~2Go).</li>
+<li><strong>Multi-onglets</strong> : Risque de conflits si 2 onglets vendent exactement le mme dernier article simultanment.</li>
+</ul>
+<hr>
+<h2 id="annexe-a-structure-des-fichiers">Annexe A  Structure des Fichiers</h2>
+<p>Voir Chapitre 2.1.</p>
+<hr>
+<h2 id="annexe-b-schma-indexeddb">Annexe B  Schma IndexedDB</h2>
+<p>Dfini dans <code>db.js</code>. Version actuelle du schma : <code>3</code>.</p>
+<p>Stores principaux lists au Chapitre 2.3.</p>
+<hr>
+<h2 id="annexe-c-glossaire">Annexe C  Glossaire</h2>
+<ul>
+<li><strong>DCI</strong> : Dnomination Commune Internationale (molcule).</li>
+<li><strong>FEFO</strong> : First Expired, First Out.</li>
+<li><strong>PWA</strong> : Progressive Web App.</li>
+<li><strong>OTC</strong> : Over The Counter (Vente libre).</li>
+<li><strong>Rx</strong> : Mdicament sur ordonnance.</li>
+<li><strong>IndexedDB</strong> : Base de donnes locale dans le navigateur.</li>
+</ul>
+<hr>
+<p><strong>FIN DU DOCUMENT</strong></p>
+</div>
+</body>
+</html>
