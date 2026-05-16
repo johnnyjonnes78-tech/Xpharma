@@ -1674,7 +1674,7 @@ async function autoBackupToStorage() {
     ];
 
     const backup = {
-      version: window.APP_VERSION || '3.5.0',
+      version: window.APP_VERSION || '9.4.1',
       exportedAt: new Date().toISOString(),
       exportedBy: AppState.currentUser?.name || 'Système',
       pharmacy: null,

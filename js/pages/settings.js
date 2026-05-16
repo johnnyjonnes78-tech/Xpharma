@@ -49,7 +49,7 @@ function renderLogin(container) {
         </div>
         
         <div class="login-footer-elite">
-          <span class="version-tag">OrdiveX v3.0</span>
+          <span class="version-tag">OrdiveX v9.4.1</span>
           <div class="network-tag ${navigator.onLine ? 'online' : 'offline'}">
             <i data-lucide="${navigator.onLine ? 'wifi' : 'wifi-off'}"></i>
             ${navigator.onLine ? 'Système synchronisé' : 'Mode hors-ligne'}
